@@ -1,12 +1,17 @@
 #include <iostream>
+
 #include "basic_types.hpp"
+#include "scene.hpp"
 #include "camera.hpp"
 
 int main()
 {
-	//Ray::initVertexList();
+	Ray::initVertexList();
+	Scene test{};
 
-	Camera test{ false };
-	test.render();
-	test.createImage();
+	Camera testCamera{ false };
+	testCamera.render();
+	testCamera.createImage();
+
+	return 0;
 }

@@ -10,6 +10,10 @@ add_executable(${PROJECT_NAME}
   src/main.cpp
   src/basic_types.hpp
   src/basic_types.cpp
+  src/scene.hpp
+  src/scene.cpp
+  src/camera.hpp
+  src/camera.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
   src
