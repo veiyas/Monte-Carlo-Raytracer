@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-project("MC Raytracer")
+project("MCRaytracer")
 #
 # Add the libraries that this application depends on
 
@@ -11,7 +11,6 @@ add_executable(${PROJECT_NAME}
   src/basic_types.hpp
   src/basic_types.cpp
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad)
 #
 # Setting some compile settings for the project
 #
