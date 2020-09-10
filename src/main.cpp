@@ -1,6 +1,7 @@
 #include <iostream>
+#include "basic_types.hpp"
 
 int main()
 {
-	std::cout << "raytracer\n";
+
 }
