@@ -11,9 +11,9 @@ typedef glm::vec<3, double> Color;
 class Ray
 {
 public:
-	//Ray(Vertex start, Vertex end)
-	//	:_start{start}, _end{end} {}
+	Ray(Vertex start, Vertex end);
 
+	static void initVertexList();
 private:
 	static std::vector<Vertex> _vertexList;
 
