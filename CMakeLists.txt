@@ -11,6 +11,10 @@ add_executable(${PROJECT_NAME}
   src/basic_types.hpp
   src/basic_types.cpp
 )
+target_include_directories(${PROJECT_NAME} PRIVATE
+  src
+  ext/glm
+)
 #
 # Setting some compile settings for the project
 #
