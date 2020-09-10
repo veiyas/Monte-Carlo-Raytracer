@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <memory>
 
@@ -20,4 +22,13 @@ private:
 	std::unique_ptr<Vertex> _start;
 	std::unique_ptr<Vertex> _end;
 	Color _rayColor;
+};
+
+class Pixel
+{
+public:
+	void addRay(std::shared_ptr<Ray> ray) { _ray = ray; }
+	Color _color{ };
+private:
+	std::shared_ptr<Ray> _ray; // The ray that goes through the pixel
 };
