@@ -1,5 +1,8 @@
+#pragma once
+
 #include <vector>
 #include <iostream>
+#include <list>
 
 #include "basic_types.hpp"
 
@@ -8,7 +11,7 @@ class Scene
 public:
 	Scene();
 
-	void intersections(Ray& arg); //TODO See if this can be const
+	void intersections(Ray& arg, std::list<Triangle*>& intersectingTriangles); //TODO See if this can be const
 private:
 	std::vector<Triangle> _sceneTris;
 };

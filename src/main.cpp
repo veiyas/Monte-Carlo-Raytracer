@@ -7,10 +7,10 @@
 int main()
 {
 	Ray::initVertexList();
-	Scene test{};
+	Scene testScene{};
 
 	Camera testCamera{ false };
-	testCamera.render();
+	testCamera.render(testScene);
 	testCamera.createImage();
 
 	return 0;

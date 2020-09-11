@@ -16,6 +16,8 @@ public:
 	Ray(Vertex start, Vertex end);
 
 	static void initVertexList();
+	Vertex getStart() const { return *_start; }
+	Vertex getEnd() const { return *_end; }
 private:
 	static std::vector<Vertex> _imagePlaneVertices;
 
@@ -38,7 +40,7 @@ class Triangle
 {
 public:
 	Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
-
+	Color getColor() const { return _color; }
 	bool rayIntersection(Ray& arg) const;
 private:
 	Vertex _v1, _v2, _v3;

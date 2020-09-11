@@ -2,13 +2,14 @@
 #include <basic_types.hpp>
 #include <vector>
 #include <random>
+#include "scene.hpp"
 
 class Camera
 {
 public:
 	Camera(bool eyePoint = false);
 
-	void render();
+	void render(Scene& scene);
 	void createImage();
 
 private:
@@ -25,7 +26,7 @@ private:
 	static const int HEIGHT = 800;
 	
 	using PixelGrid = std::vector<std::vector<Pixel> >;
-	PixelGrid _pixels{ WIDTH, std::vector<Pixel>(HEIGHT) };
+	PixelGrid _pixels{ HEIGHT, std::vector<Pixel>(WIDTH) };
 
 	// Random generator stuff
 	std::mt19937 gen;
