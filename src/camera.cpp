@@ -28,7 +28,7 @@ void Camera::render()
 			auto ray = std::make_shared<Ray>(_eyeToggle ? _eyePoint1 : _eyePoint2, pixelPoint);
 
 			_pixels[i][j].addRay(ray);
-			_pixels[i][j]._color = Color{ rng(gen), rng(gen), rng(gen) }; // FIXME
+			_pixels[i][j]._color = Color{ rng(gen), rng(gen), rng(gen) }; // TODO pixel color
 		}
 }
 

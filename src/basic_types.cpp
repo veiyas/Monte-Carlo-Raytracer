@@ -21,8 +21,8 @@ Triangle::Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color colo
 
 }
 
-bool Triangle::rayIntersection(Ray arg)
+bool Triangle::rayIntersection(Ray& arg) const
 {
-	//TODO
+	//TODO implement rayIntersection()
 	return false;
 }

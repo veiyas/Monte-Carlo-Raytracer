@@ -39,7 +39,7 @@ class Triangle
 public:
 	Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
 
-	bool rayIntersection(Ray arg);
+	bool rayIntersection(Ray& arg) const;
 private:
 	Vertex _v1, _v2, _v3;
 	Direction _normal;

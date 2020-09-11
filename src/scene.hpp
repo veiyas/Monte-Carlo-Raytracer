@@ -1,4 +1,5 @@
 #include <vector>
+#include <iostream>
 
 #include "basic_types.hpp"
 
@@ -7,18 +8,16 @@ class Scene
 public:
 	Scene();
 
-	void intersections();
+	void intersections(Ray& arg); //TODO See if this can be const
 private:
-	std::vector<Triangle> _tris;
+	std::vector<Triangle> _sceneTris;
 };
 
 const std::vector<Vertex> floorVertices{
 	Vertex{-3, 0, -5, 1}, Vertex{0, 0, -5, 1}, Vertex{0, 6, -5, 1},
 	Vertex{-3, 0, -5, 1}, Vertex{0, -6, -5, 1}, Vertex{0, 0, -5, 1},
-	Vertex{0, 6, -5, 1}, Vertex{0, 0, -5, 1}, Vertex{10, 6, -5, 1},
-	Vertex{0, 0, -5, 1}, Vertex{10, 0, -5, 1}, Vertex{10, 6, -5, 1},
-	Vertex{0, 0, -5, 1}, Vertex{0, -6, -5, 1}, Vertex{10, 0, -5, 1},
-	Vertex{0, -6, -5, 1}, Vertex{10, -6, -5, 1}, Vertex{10, 0, -5, 1},
+	Vertex{0, -6, -5, 1}, Vertex{10, 6, -5, 1}, Vertex{0, 6, -5, 1},
+	Vertex{0, -6, -5, 1}, Vertex{10, -6, -5, 1}, Vertex{10, 6, -5, 1},
 	Vertex{10, 0, -5, 1}, Vertex{13, 0, -5, 1}, Vertex{10, 6, -5, 1},
 	Vertex{10, 0, -5, 1}, Vertex{10, -6, -5, 1}, Vertex{13, 0, -5, 1}
 };
@@ -26,10 +25,8 @@ const std::vector<Vertex> floorVertices{
 const std::vector<Vertex> ceilingVertices{
 	Vertex{-3, 0, 5, 1}, Vertex{0, 0, 5, 1}, Vertex{0, 6, 5, 1},
 	Vertex{-3, 0, 5, 1}, Vertex{0, -6, 5, 1}, Vertex{0, 0, 5, 1},
-	Vertex{0, 6, 5, 1}, Vertex{0, 0, 5, 1}, Vertex{10, 6, 5, 1},
-	Vertex{0, 0, 5, 1}, Vertex{10, 0, 5, 1}, Vertex{10, 6, 5, 1},
-	Vertex{0, 0, 5, 1}, Vertex{0, -6, 5, 1}, Vertex{10, 0, 5, 1},
-	Vertex{0, -6, 5, 1}, Vertex{10, -6, 5, 1}, Vertex{10, 0, 5, 1},
+	Vertex{0, -6, 5, 1}, Vertex{10, 6, 5, 1}, Vertex{0, 6, 5, 1},
+	Vertex{0, -6, 5, 1}, Vertex{10, -6, 5, 1}, Vertex{10, 6, 5, 1},
 	Vertex{10, 0, 5, 1}, Vertex{13, 0, 5, 1}, Vertex{10, 6, 5, 1},
 	Vertex{10, 0, 5, 1}, Vertex{10, -6, 5, 1}, Vertex{13, 0, 5, 1}
 };
