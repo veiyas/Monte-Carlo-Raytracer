@@ -34,7 +34,6 @@ void Camera::render(Scene& scene)
 		{
 			thread.join();
 		}
-		
 	}
 
 	auto endTime = std::chrono::high_resolution_clock::now();
@@ -118,4 +117,8 @@ void Camera::createImage()
 		blueFile  << '\n';
 	}
 
+}
+
+void Camera::createPNG()
+{
 }

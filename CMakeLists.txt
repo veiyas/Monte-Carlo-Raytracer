@@ -18,6 +18,7 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
   src
   ext/glm
+  ext/png++-0.2.9
 )
 #
 # Setting some compile settings for the project

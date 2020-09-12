@@ -3,6 +3,8 @@
 #include <random>
 #include <atomic>
 
+#include "png.hpp"
+
 #include "basic_types.hpp"
 #include "scene.hpp"
 
@@ -13,6 +15,7 @@ public:
 
 	void render(Scene& scene);
 	void createImage();
+	void createPNG();
 
 private:
 	const Vertex _eyePoint1{ -2.0f, 0.0f, 0.0f, 1.0f };
