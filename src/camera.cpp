@@ -38,7 +38,7 @@ void Camera::render(Scene& scene)
 
 	auto endTime = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> duration = endTime - startTime;
-	std::cout << "Rendering finished in " << duration.count() << " seconds\n";
+	std::cout << "Rendering finished in " << duration.count() << " seconds\n\n";
 }
 
 void Camera::renderThreadFunction(int row, Scene& scene)
@@ -134,6 +134,10 @@ void Camera::createPNG()
 				maxIntensity = maxOfPixel;
 		}
 	}
+
+	std::cout << "Maximum intensity found: " << maxIntensity << '\n';
+
+	std::cout << "Start writing to file...\n";
 	
 	std::vector<unsigned char> image;
 	image.resize(WIDTH * HEIGHT * 4);
@@ -144,15 +148,17 @@ void Camera::createPNG()
 		{
 			unsigned char r = static_cast<unsigned char>(_pixels[row][col]._color.r * 255.99f / maxIntensity);
 			unsigned char g = static_cast<unsigned char>(_pixels[row][col]._color.g * 255.99f / maxIntensity);
-			unsigned char b = static_cast<unsigned char>(_pixels[row][col]._color.b * 255.99f / maxIntensity);
+			unsigned char b = static_cast<unsigned char>(_pixels[row][col]._color.b * 255.99f / maxIntensity);			
 
 			image[row * 4 * WIDTH + col * 4 + 0] = r;
 			image[row * 4 * WIDTH + col * 4 + 1] = g;
 			image[row * 4 * WIDTH + col * 4 + 2] = b;
-			image[row * 4 * WIDTH + col * 4 + 3] = 1;
+			image[row * 4 * WIDTH + col * 4 + 3] = 255;
 		}
 	}
 
 	unsigned error = lodepng::encode(filename, image, WIDTH, HEIGHT);
 	if (error) std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+	else
+		std::cout << "Done!\n";
 }

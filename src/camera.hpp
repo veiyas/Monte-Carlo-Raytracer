@@ -13,9 +13,10 @@ public:
 	Camera(bool eyePoint = false);
 
 	void render(Scene& scene);
-	void createImage();
 	void createPNG();
 
+	//DEPRECATED
+	void createImage();
 private:
 	const Vertex _eyePoint1{ -2.0f, 0.0f, 0.0f, 1.0f };
 	const Vertex _eyePoint2{ -1.0f, 0.0f, 0.0f, 1.0f };
