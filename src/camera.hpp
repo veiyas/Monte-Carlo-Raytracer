@@ -1,9 +1,8 @@
 #pragma once
 #include <vector>
 #include <random>
-#include <atomic>
 
-#include "png.hpp"
+#include "lodepng.h"
 
 #include "basic_types.hpp"
 #include "scene.hpp"

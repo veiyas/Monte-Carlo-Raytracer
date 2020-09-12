@@ -11,7 +11,8 @@ int main()
 
 	Camera testCamera{ false };
 	testCamera.render(testScene);
-	testCamera.createImage();
+	testCamera.createPNG();
+	//testCamera.createImage();
 
 	return 0;
 }
