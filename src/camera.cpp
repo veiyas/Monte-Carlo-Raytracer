@@ -25,9 +25,9 @@ void Camera::render(Scene& scene)
 	{
 		std::vector<std::thread> threads;
 		
-		for (size_t i = 0; i < numCores; i++)
+		for (size_t i = 0; (i < numCores) && (row + i < HEIGHT); i++)
 		{
-		threads.push_back(std::thread(&Camera::renderThreadFunction, this, row + i, std::ref(scene)));
+			threads.push_back(std::thread(&Camera::renderThreadFunction, this, row + i, std::ref(scene)));
 		}
 		
 		for (auto& thread : threads)
