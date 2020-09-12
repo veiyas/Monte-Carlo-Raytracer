@@ -33,15 +33,41 @@ Scene::Scene()
 		if (i % 6 == 0 && i != 0)
 			wallNormalCounter++;
 	}
+
+	// Tetrahedrons
+	_tetrahedrons.emplace_back(2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, 1.0f, 0.0f, 1.0f });
+	_tetrahedrons.emplace_back(2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 0.0f, 1.0f });
+	_tetrahedrons.emplace_back(1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
+	// Intersecting the walls
+	//_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
+
 }
 
-void Scene::intersections(Ray& ray, std::list<Triangle*>& intersectingTriangles)
+Color Scene::intersection(Ray& ray)
 {
+	Color colorOfClosestIntersect{ };
+	float minT = 1e+10;
+
 	for (auto& triangle : _sceneTris)
 	{
-		if (triangle.rayIntersection(ray))
+		float t = triangle.rayIntersection(ray);
+		if (t != -1 && t < minT)
 		{
-			intersectingTriangles.push_back(&triangle);
+			colorOfClosestIntersect = triangle.getColor();
+			minT = t;
 		}
-	}	
+	}
+
+	for (auto& tetrahedron : _tetrahedrons)
+	{
+		auto intersect = tetrahedron.rayIntersection(ray);
+		if (intersect.first != -1 && intersect.first < minT)
+		{
+			colorOfClosestIntersect = tetrahedron.getColor();
+			minT = intersect.first;
+		}
+	}
+
+	// Since a closed scene is used, there should always be at least one intersection
+	return colorOfClosestIntersect;
 }

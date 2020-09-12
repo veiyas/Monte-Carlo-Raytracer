@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <iostream>
+#include <array>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -45,9 +46,19 @@ class Triangle
 public:
 	Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
 	Color getColor() const { return _color; }
-	bool rayIntersection(Ray& arg) const;
+	float rayIntersection(Ray& arg) const;
 private:
 	Vertex _v1, _v2, _v3;
 	Direction _normal;
 	Color _color;
+};
+
+class Tetrahedron
+{
+public:
+	Tetrahedron(float radius, Color color, Vertex position);
+	Color getColor() const;
+	std::pair<float, Color> rayIntersection(Ray& arg) const;
+private:
+	std::vector<Triangle> _triangles;
 };

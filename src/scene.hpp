@@ -12,9 +12,10 @@ class Scene
 public:
 	Scene();
 
-	void intersections(Ray& arg, std::list<Triangle*>& intersectingTriangles); //TODO See if this can be const
+	Color intersection(Ray& arg); //TODO See if this can be const
 private:
 	std::vector<Triangle> _sceneTris;
+	std::vector<Tetrahedron> _tetrahedrons;
 };
 
 const std::vector<Vertex> floorVertices{

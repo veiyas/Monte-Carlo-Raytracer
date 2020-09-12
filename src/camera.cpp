@@ -63,22 +63,8 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 
 		_pixels.at(row).at(col).addRay(ray);
 
-		// Assume for now that only one intersection takes place and give the color
-		// of the intersected triangle to the pixel
-		std::list<Triangle*> intersections;
-		scene.intersections(*ray, intersections);
-		// It probably shouldnt even be possible for this to be empty in a closed scene...
-		if (!intersections.empty())
-		{
-			if (intersections.size() != 1)
-				std::cout << "Mulitple intersections!\n";
-			_pixels[row][col]._color = intersections.front()->getColor();
-		}
-		else
-		{
-			_pixels[row][col]._color = Color{ 0.0 };
-			std::cout << "No intersections!\n";
-		}
+		_pixels[row][col]._color = scene.intersection(*ray);
+
 	}
 }
 
@@ -150,10 +136,10 @@ void Camera::createPNG()
 			unsigned char g = static_cast<unsigned char>(_pixels[row][col]._color.g * 255.99f / maxIntensity);
 			unsigned char b = static_cast<unsigned char>(_pixels[row][col]._color.b * 255.99f / maxIntensity);			
 
-			image[row * 4 * WIDTH + col * 4 + 0] = r;
-			image[row * 4 * WIDTH + col * 4 + 1] = g;
-			image[row * 4 * WIDTH + col * 4 + 2] = b;
-			image[row * 4 * WIDTH + col * 4 + 3] = 255;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 0] = r;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 1] = g;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 2] = b;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 3] = 255;
 		}
 	}
 
