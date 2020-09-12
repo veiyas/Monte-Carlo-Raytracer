@@ -5,11 +5,13 @@ std::vector<Vertex> Ray::_imagePlaneVertices;
 
 Ray::Ray(Vertex start, Vertex end)
 {
-	_imagePlaneVertices.push_back(std::move(start));
-	_imagePlaneVertices.push_back(std::move(end));
-
 	_start = std::make_unique<Vertex>(start);
 	_end = std::make_unique<Vertex>(end);
+
+	//TODO this needs to be resolved, concurrency errors probably
+	//const std::lock_guard<std::mutex> lock(arrayLock);
+	//_imagePlaneVertices.push_back(start);
+	//_imagePlaneVertices.push_back(end);
 }
 
 void Ray::initVertexList()

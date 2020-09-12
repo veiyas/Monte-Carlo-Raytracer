@@ -1,7 +1,9 @@
 #pragma once
-#include <basic_types.hpp>
 #include <vector>
 #include <random>
+#include <atomic>
+
+#include "basic_types.hpp"
 #include "scene.hpp"
 
 class Camera
@@ -31,4 +33,6 @@ private:
 	// Random generator stuff
 	std::mt19937 gen;
 	std::uniform_real_distribution<float> rng;
+
+	void renderThreadFunction(int row, Scene& scene);
 };

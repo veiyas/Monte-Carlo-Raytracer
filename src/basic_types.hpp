@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <memory>
+#include <mutex>
+#include <iostream>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -25,6 +27,8 @@ private:
 	std::unique_ptr<Vertex> _start;
 	std::unique_ptr<Vertex> _end;
 	std::unique_ptr<Vertex> _endTriangle;
+
+	std::mutex arrayLock;
 };
 
 class Pixel

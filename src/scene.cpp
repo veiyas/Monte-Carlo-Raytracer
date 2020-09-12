@@ -43,5 +43,5 @@ void Scene::intersections(Ray& ray, std::list<Triangle*>& intersectingTriangles)
 		{
 			intersectingTriangles.push_back(&triangle);
 		}
-	}
+	}	
 }
