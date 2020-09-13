@@ -13,6 +13,8 @@ add_executable(${PROJECT_NAME}
   src/basic_types.cpp
   src/scene.hpp
   src/scene.cpp
+  src/shapes.hpp
+  src/shapes.cpp
   src/camera.hpp
   src/camera.cpp
 )
