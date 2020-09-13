@@ -64,7 +64,6 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 		_pixels.at(row).at(col).addRay(ray);
 
 		_pixels[row][col]._color = scene.intersection(*ray);
-
 	}
 }
 

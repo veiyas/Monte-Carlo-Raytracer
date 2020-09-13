@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "basic_types.hpp"
+#include "shapes.hpp"
 
 class Scene
 {
@@ -16,6 +17,7 @@ public:
 private:
 	std::vector<Triangle> _sceneTris;
 	std::vector<Tetrahedron> _tetrahedrons;
+	std::vector<Sphere> _spheres;
 };
 
 const std::vector<Vertex> floorVertices{
