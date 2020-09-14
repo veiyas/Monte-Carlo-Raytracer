@@ -24,28 +24,29 @@ Scene::Scene()
 	size_t wallNormalCounter = 0;
 	for (size_t i = 0; i < wallVertices.size(); i += 3)
 	{
-		_sceneTris.emplace_back(
-			wallVertices[i], wallVertices[i + 1], wallVertices[i + 2],
-			wallNormals[wallNormalCounter], Color{ 0.45, 0.58, 0.48 });
-
 		//Since there are a lot more vertices than normals
 		//Some care has to be taken when reading normals
 		if (i % 6 == 0 && i != 0)
 			wallNormalCounter++;
+
+		_sceneTris.emplace_back(
+			wallVertices[i], wallVertices[i + 1], wallVertices[i + 2],
+			wallNormals[wallNormalCounter], Color{ 0.45, 0.58, 0.48 });
+
 	}
 
 	// Tetrahedrons
 	_tetrahedrons.emplace_back(2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, 4.0f, 0.0f, 1.0f });
-	//_tetrahedrons.emplace_back(2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 0.0f, 1.0f });
-	//_tetrahedrons.emplace_back(1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
+	_tetrahedrons.emplace_back(2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 0.0f, 1.0f });
+	_tetrahedrons.emplace_back(1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
 	// Intersecting the walls
-	//_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
+	_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
-	_spheres.emplace_back(2.0f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f }, 1.f);
+	//_spheres.emplace_back(2.0f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f }, 1.f);
 
 	//Lights
-	_pointLights.emplace_back(Vertex(5, 6, 4, 1), Color(1, 1, 1));
+	_pointLights.emplace_back(Vertex(5, 5, 4, 1), Color(1, 1, 1));
 }
 
 Color Scene::intersection(Ray& ray)
@@ -94,6 +95,7 @@ Color Scene::intersection(Ray& ray)
 
 float Scene::shadowRayContribution(const Triangle& tri) const
 {
+	float lightContribution = 0.f;
 	for (const auto& light : _pointLights)
 	{
 		bool visible = true;
@@ -103,8 +105,9 @@ float Scene::shadowRayContribution(const Triangle& tri) const
 		//TODO perform visibility test
 
 		if (visible)
-			return glm::max(0.f, glm::dot(shadowRayVec, tri.getNormal()));
+			lightContribution += glm::max(0.f, glm::dot(shadowRayVec, tri.getNormal()));
 		else
-			return 0.1f;
+			lightContribution += 0.f;
 	}
+	return lightContribution;
 }

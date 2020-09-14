@@ -76,7 +76,7 @@ std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 	else
 		d = (-b / 2) - glm::sqrt(sqrtExpression);
 		//float dPlus = (-b / 2) + glm::sqrt(glm::pow((b / 2), 2) - a * c);
-	Vertex x = arg.getStart() + directionVertex.operator*=(d);
+	Vertex x = arg.getEnd() + directionVertex.operator*=(d);
 	Direction normal = glm::normalize(glm::vec3((
 		x.x - _position.x, x.y - _position.y, x.z - _position.z)));
 	Triangle triAroundPointX{ x, normal };
