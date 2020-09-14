@@ -7,6 +7,7 @@
 
 #include "basic_types.hpp"
 #include "shapes.hpp"
+#include "lights.hpp"
 
 class Scene
 {
@@ -18,6 +19,9 @@ private:
 	std::vector<Triangle> _sceneTris;
 	std::vector<Tetrahedron> _tetrahedrons;
 	std::vector<Sphere> _spheres;
+	std::vector<PointLight> _pointLights;
+
+	float shadowRayContribution(const Triangle& tri) const;
 };
 
 const std::vector<Vertex> floorVertices{

@@ -21,6 +21,8 @@ void Camera::render(Scene& scene)
 	size_t numCores = std::thread::hardware_concurrency();
 	numCores = numCores == 0 ? 1 : numCores;
 
+	std::cout << "Available threads: " << numCores << "\n";
+
 	for (int row = 0; row < HEIGHT; row += numCores)
 	{
 		std::vector<std::thread> threads;

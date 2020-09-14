@@ -25,6 +25,29 @@ Triangle::Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color colo
 
 }
 
+Triangle::Triangle(Vertex v1, Vertex v2, Vertex v3, Color color)
+	: _v1{ v1 }, _v2{ v2 }, _v3{ v3 }, _color{ color }
+{
+	glm::vec3 v2v1 = glm::normalize(glm::vec3(v2 - v1));
+	glm::vec3 v3v2 = glm::normalize(glm::vec3(v3 - v2));
+	_normal = glm::cross(v2v1, v3v2);
+}
+
+Triangle::Triangle(Vertex v, Direction normal)
+	: _v1{ v }, _v2{ v }, _v3{ v }, _normal{normal}, _color{}
+{
+
+}
+
+Vertex Triangle::getCenter() const
+{
+	return Vertex{
+		(_v1.x + _v2.x + _v3.x) / 3,
+		(_v1.y + _v2.y + _v3.y) / 3,
+		(_v1.z + _v2.z + _v3.z) / 3,
+		1.f};
+}
+
 float Triangle::rayIntersection(Ray& arg) const
 {
 	// Moller Trumbore algorithm

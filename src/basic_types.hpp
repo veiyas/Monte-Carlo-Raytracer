@@ -22,7 +22,7 @@ public:
 	Vertex getStart() const { return *_start; }
 	Vertex getEnd() const { return *_end; }
 private:
-	static std::vector<Vertex> _imagePlaneVertices;
+	static std::vector<Vertex> _imagePlaneVertices; //?????
 
 	Color _rayColor;
 	std::unique_ptr<Vertex> _start;
@@ -45,7 +45,12 @@ class Triangle
 {
 public:
 	Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
+	Triangle(Vertex v1, Vertex v2, Vertex v3, Color color); //Calculate normal
+	Triangle(Vertex v, Direction normal); //Used for spheres with no triangles
+	Triangle() = default;
 	Color getColor() const { return _color; }
+	Direction getNormal() const { return _normal; }
+	Vertex getCenter() const;
 	float rayIntersection(Ray& arg) const;
 private:
 	Vertex _v1, _v2, _v3;
