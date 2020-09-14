@@ -49,36 +49,37 @@ Sphere::Sphere(float radius, Color color, Vertex position, float alpha)
 
 }
 
+double EPSILON = 1e-6;
 std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 {
-	Vertex directionVertex = arg.getEnd() - arg.getStart();
-	//rayDirectionNorm = I
-	Direction rayDirectionNorm =
-		glm::normalize(Direction{directionVertex.x, directionVertex.y, directionVertex.z });
-	double a = glm::dot(rayDirectionNorm, rayDirectionNorm);
+	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
+	glm::vec3 rayEnd{ arg.getEnd().x, arg.getEnd().y, arg.getEnd().z };
+	glm::vec3 rayDirectionNormalized = glm::normalize(rayEnd - rayStart);
 
-	//Recycle rayDirection norm as 2I
-	rayDirectionNorm *= 2;
-	Vertex ocVertex = arg.getStart() - _position;
-	Direction o_c{ ocVertex.x, ocVertex.y, ocVertex.z };
-	double b = glm::dot(rayDirectionNorm, o_c);
-	double c = glm::dot(o_c, o_c) - _radius;
+	glm::vec3 o_c = rayStart - glm::vec3{ _position.x, _position.y, _position.z };
 
-	double sqrtExpression = glm::pow((b / 2), 2) - a * c;
-	float d{};
+	double a = glm::dot(rayDirectionNormalized, rayDirectionNormalized);
+	double b = glm::dot(o_c, rayDirectionNormalized.operator*=(2));
+	double c = glm::dot(o_c, o_c) - _radius * _radius;
+	double d{};
 
-	if (sqrtExpression < 0) //No intersection
-		return std::make_pair(-1, Triangle{ });
+	rayDirectionNormalized /= 2; //Reset to normalized vector
+	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
 
-	//TODO finish sphere shadow ray support
-	else if (sqrtExpression < 1e-6 && sqrtExpression > -1e-6) //One intersection
-		d = -b / 2;
+	if (expressionInSQRT < -EPSILON) //No intersection
+		return std::make_pair(-1, Triangle());
+	else if (expressionInSQRT > -EPSILON && expressionInSQRT < EPSILON) //One intersection
+		d = (-b) / 2;
 	else
-		d = (-b / 2) - glm::sqrt(sqrtExpression);
-		//float dPlus = (-b / 2) + glm::sqrt(glm::pow((b / 2), 2) - a * c);
-	Vertex x = arg.getEnd() + directionVertex.operator*=(d);
-	Direction normal = glm::normalize(glm::vec3((
-		x.x - _position.x, x.y - _position.y, x.z - _position.z)));
-	Triangle triAroundPointX{ x, normal };
-	return std::make_pair(d, triAroundPointX);
+		d = ((-b) / 2) - glm::sqrt(expressionInSQRT);
+
+	glm::vec3 intersection = rayStart + rayDirectionNormalized.operator*=(d);
+	glm::vec3 intersectionPointNormal = glm::normalize(glm::vec3{
+		intersection.x - _position.x,
+		intersection.y - _position.y,
+		intersection.z - _position.z });
+
+	//std::cout << rayEnd.x + rayDirectionNormalized.x*d << "\n";
+
+	return std::make_pair(d, Triangle(glm::vec4(intersection, 1.0), intersectionPointNormal));
 }

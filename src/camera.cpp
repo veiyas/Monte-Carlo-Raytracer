@@ -63,7 +63,7 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 
 		auto ray = std::make_shared<Ray>(_eyeToggle ? _eyePoint1 : _eyePoint2, pixelPoint);
 
-		_pixels.at(row).at(col).addRay(ray);
+		_pixels[row][col].addRay(ray);
 
 		_pixels[row][col]._color = scene.intersection(*ray);
 	}

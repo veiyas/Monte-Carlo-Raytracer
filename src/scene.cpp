@@ -36,17 +36,22 @@ Scene::Scene()
 	}
 
 	// Tetrahedrons
-	_tetrahedrons.emplace_back(2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, 4.0f, 0.0f, 1.0f });
-	_tetrahedrons.emplace_back(2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 0.0f, 1.0f });
-	_tetrahedrons.emplace_back(1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
+	//_tetrahedrons.emplace_back(2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, 4.0f, 0.0f, 1.0f });
+	//_tetrahedrons.emplace_back(2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 0.0f, 1.0f });
+	//_tetrahedrons.emplace_back(1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
 	// Intersecting the walls
-	_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
+	//_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
-	//_spheres.emplace_back(2.0f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f }, 1.f);
+	_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f }, 1.f);
+	_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, -3.f, -3.f, 1.f }, 1.f);
+	_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 3.f, -3.f, 1.f }, 1.f);
+	_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, -3.f, 3.f, 1.f }, 1.f);
+	_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 0.f, 3.f, 1.f }, 1.f);
+	_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 3.f, 3.f, 1.f }, 1.f);
 
 	//Lights
-	_pointLights.emplace_back(Vertex(5, 5, 4, 1), Color(1, 1, 1));
+	_pointLights.emplace_back(Vertex(5, 0, 0, 1), Color(1, 1, 1));
 }
 
 Color Scene::intersection(Ray& ray)
@@ -80,11 +85,11 @@ Color Scene::intersection(Ray& ray)
 	for (auto& sphere : _spheres)
 	{
 		auto intersect = sphere.rayIntersection(ray);
+		
 		if (intersect.first != -1 && intersect.first < minT)
 		{
 			float shadowRatio = shadowRayContribution(intersect.second);
-			colorOfClosestIntersect =
-				sphere.getColor().operator*=(shadowRatio);
+			colorOfClosestIntersect = sphere.getColor().operator*=(shadowRatio);
 			minT = intersect.first;
 		}
 	}
@@ -105,7 +110,7 @@ float Scene::shadowRayContribution(const Triangle& tri) const
 		//TODO perform visibility test
 
 		if (visible)
-			lightContribution += glm::max(0.f, glm::dot(shadowRayVec, tri.getNormal()));
+			lightContribution += glm::max(0.2f, glm::dot(shadowRayVec, tri.getNormal()));
 		else
 			lightContribution += 0.f;
 	}
