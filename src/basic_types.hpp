@@ -46,7 +46,7 @@ class Triangle
 public:
 	Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
 	Triangle(Vertex v1, Vertex v2, Vertex v3, Color color); //Calculate normal
-	Triangle(Vertex v, Direction normal); //Used for spheres with no triangles
+	Triangle(Vertex v, Direction normal, const Color& color); //Used for spheres with no triangles
 	Triangle() = default;
 	Color getColor() const { return _color; }
 	Direction getNormal() const { return _normal; }

@@ -24,8 +24,8 @@ public:
 	Color getColor() const { return _color; }
 	std::pair<float, Triangle> rayIntersection(Ray& arg) const;
 private:
-	Vertex _position;
-	float _radius;
-	Color _color;
+	const Vertex _position;
+	const float _radius;
+	const Color _color;
 	float _alpha; //TODO transparency stuff, put this in BRDF
 };

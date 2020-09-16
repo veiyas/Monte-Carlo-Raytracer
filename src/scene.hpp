@@ -21,7 +21,7 @@ private:
 	std::vector<Sphere> _spheres;
 	std::vector<PointLight> _pointLights;
 
-	static constexpr float inShadowContrib = 0.4f;
+	static constexpr float ambientContribution = 0.f;
 
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
 };

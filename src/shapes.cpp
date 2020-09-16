@@ -81,5 +81,5 @@ std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 
 	//std::cout << rayEnd.x + rayDirectionNormalized.x*d << "\n";
 
-	return std::make_pair(d, Triangle(glm::vec4(intersection, 1.0), intersectionPointNormal));
+	return std::make_pair(d, Triangle(glm::vec4(intersection, 1.0), intersectionPointNormal, _color));
 }
