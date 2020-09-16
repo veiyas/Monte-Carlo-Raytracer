@@ -137,10 +137,10 @@ void Camera::createPNG()
 			unsigned char g = static_cast<unsigned char>(_pixels[row][col]._color.g * 255.99f / maxIntensity);
 			unsigned char b = static_cast<unsigned char>(_pixels[row][col]._color.b * 255.99f / maxIntensity);			
 
-			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 0] = r;
-			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 1] = g;
-			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 2] = b;
-			image[(HEIGHT - 1 - row) * 4 * WIDTH + col * 4 + 3] = 255;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + (WIDTH - 1 - col) * 4 + 0] = r;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + (WIDTH - 1 - col) * 4 + 1] = g;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + (WIDTH - 1 - col) * 4 + 2] = b;
+			image[(HEIGHT - 1 - row) * 4 * WIDTH + (WIDTH - 1 - col) * 4 + 3] = 255;
 		}
 	}
 
