@@ -129,42 +129,33 @@ float Scene::shadowRayContribution(const Vertex& point, const Direction& normal)
 			auto itTetra = _tetrahedrons.begin();
 			auto itSphere = _spheres.begin();
 
-			while (itTetra != _tetrahedrons.end() || itSphere != _spheres.end())
+			//This loop is ugly but efficient
+			while ((itTetra != _tetrahedrons.end() || itSphere != _spheres.end()) && visible)
 			{
-				std::optional<std::pair<float, Triangle>> intersectTetra;
-				std::optional<std::pair<float, Triangle>> intersectSphere;
-
-				if (itTetra != _tetrahedrons.end())
+				if (itTetra != _tetrahedrons.end() && visible)
 				{
-					intersectTetra = itTetra->rayIntersection(shadowRay);
+					visible = objectIsVisible(itTetra->rayIntersection(shadowRay), normal);
 					++itTetra;
 				}
-				if (itSphere != _spheres.end())
+				if (itSphere != _spheres.end() && visible)
 				{
-					intersectSphere = itSphere->rayIntersection(shadowRay);
+					visible = objectIsVisible(itSphere->rayIntersection(shadowRay), normal);
 					++itSphere;
 				}
-				if(intersectTetra.has_value())
-					if (intersectTetra->first != -1 // Intersection must exist
-						&& intersectTetra->first < 1 // Intersections with t > 1 are behind the light
-						&& normal != intersectTetra->second.getNormal())
-					{
-						visible = false;
-						break;
-					}
-				if (intersectSphere.has_value())
-					if (intersectSphere->first != -1 // Intersection must exist
-						&& intersectSphere->first < 1 // Intersections with t > 1 are behind the light
-						&& normal != intersectSphere->second.getNormal())
-					{
-						visible = false;
-						break;
-					}
 			}			
 		}
-		if(visible)
-			lightContribution += normalDotContribution;
+		lightContribution += normalDotContribution * visible;
 	}
 
 	return lightContribution;
+}
+
+bool Scene::objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const
+{
+	if (input.first != -1 // Intersection must exist
+		&& input.first < 1 // Intersections with t > 1 are behind the light
+		&& normal != input.second.getNormal())
+		return false;
+	else
+		return true;
 }

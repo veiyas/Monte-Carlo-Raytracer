@@ -22,9 +22,11 @@ private:
 	std::vector<Sphere> _spheres;
 	std::vector<PointLight> _pointLights;
 
-	static constexpr float ambientContribution = 0.f;
+	static constexpr float ambientContribution = 0.25f;
 
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
+
+	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;
 };
 
 const std::vector<Vertex> floorVertices{
