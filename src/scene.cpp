@@ -120,39 +120,47 @@ float Scene::shadowRayContribution(const Vertex& point, const Direction& normal)
 		Direction shadowRayVec = glm::normalize(light.getPosition() - point);
 		float normalDotContribution = glm::dot(shadowRayVec, normal);
 
-		if (normalDotContribution < 0) //Angle between normal and lightvec > 90 deg
+		if (normalDotContribution <= 0) //Angle between normal and lightvec >= 90 deg
 			continue;
 		else
 		{
 			Ray shadowRay{ point, light.getPosition() };
 
-			for (auto& tetrahedron : _tetrahedrons)
-			{
-				auto intersect = tetrahedron.rayIntersection(shadowRay);
+			auto itTetra = _tetrahedrons.begin();
+			auto itSphere = _spheres.begin();
 
-				if (intersect.first != -1 // Intersection must exist
-					&& intersect.first < 1 // Intersections with t > 1 are behind the light
-					&& normal != intersect.second.getNormal())
+			while (itTetra != _tetrahedrons.end() || itSphere != _spheres.end())
+			{
+				std::optional<std::pair<float, Triangle>> intersectTetra;
+				std::optional<std::pair<float, Triangle>> intersectSphere;
+
+				if (itTetra != _tetrahedrons.end())
 				{
-					bool visible = false;
-					break;
+					intersectTetra = itTetra->rayIntersection(shadowRay);
+					++itTetra;
 				}
-			}
-
-			if (visible)
-			{
-				for (auto& sphere : _spheres)
+				if (itSphere != _spheres.end())
 				{
-					auto intersect = sphere.rayIntersection(shadowRay);
-					if (intersect.first != -1
-						&& intersect.first < glm::length(shadowRay.getEnd() - shadowRay.getStart())
-						&& normal != intersect.second.getNormal())
+					intersectSphere = itSphere->rayIntersection(shadowRay);
+					++itSphere;
+				}
+				if(intersectTetra.has_value())
+					if (intersectTetra->first != -1 // Intersection must exist
+						&& intersectTetra->first < 1 // Intersections with t > 1 are behind the light
+						&& normal != intersectTetra->second.getNormal())
 					{
-						bool visible = false;
+						visible = false;
 						break;
 					}
-				}
-			}
+				if (intersectSphere.has_value())
+					if (intersectSphere->first != -1 // Intersection must exist
+						&& intersectSphere->first < 1 // Intersections with t > 1 are behind the light
+						&& normal != intersectSphere->second.getNormal())
+					{
+						visible = false;
+						break;
+					}
+			}			
 		}
 		if(visible)
 			lightContribution += normalDotContribution;

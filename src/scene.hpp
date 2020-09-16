@@ -4,6 +4,7 @@
 #include <iostream>
 #include <list>
 #include <thread>
+#include <optional>
 
 #include "basic_types.hpp"
 #include "shapes.hpp"
