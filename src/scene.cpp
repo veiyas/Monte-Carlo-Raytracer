@@ -36,11 +36,11 @@ Scene::Scene()
 	}
 
 	// Tetrahedrons
-	//_tetrahedrons.emplace_back(2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, 0.0f, -3.0f, 1.0f });
+	_tetrahedrons.emplace_back(2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, 0.0f, -3.0f, 1.0f });
 	//_tetrahedrons.emplace_back(2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 0.0f, 1.0f });
 	//_tetrahedrons.emplace_back(1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
-	// Intersecting the walls
-	//_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
+	//// Intersecting the walls
+	//_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 3.0f, 0.0f, 1.0f });
 
 	//Spheres
 	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, 3.f, 1.f }, 1.f);
@@ -122,15 +122,23 @@ float Scene::shadowRayContribution(const Vertex& point, const Direction& normal)
 			for (auto& tetrahedron : _tetrahedrons)
 			{
 				auto intersect = tetrahedron.rayIntersection(shadowRay);
-				if (intersect.first != -1 && normal != intersect.second.getNormal())
+				if (intersect.first != -1 // Intersection must exist
+					&& intersect.first < 1 // Intersections with t > 1 are behind the light
+					&& normal != intersect.second.getNormal())
+				{
 					return inShadowContrib;
+				}
 			}
 
 			for (auto& sphere : _spheres)
 			{
 				auto intersect = sphere.rayIntersection(shadowRay);
-				if (intersect.first != -1 && normal != intersect.second.getNormal())
+				if (intersect.first != -1
+					&& intersect.first < glm::length(shadowRay.getEnd() - shadowRay.getStart())
+					&& normal != intersect.second.getNormal())
+				{
 					return inShadowContrib;
+				}
 			}
 		}
 		lightContribution += normalDotContribution + 0.5f;
