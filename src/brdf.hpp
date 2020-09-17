@@ -8,6 +8,7 @@ class BRDF
 public:
 	BRDF(unsigned surfaceType);
 
+	unsigned getSurfaceType() const { return _surfaceType; }
 	enum
 	{
 		DIFFUSE,

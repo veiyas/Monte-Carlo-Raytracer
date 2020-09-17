@@ -2,6 +2,9 @@
 
 #include <vector>
 #include <iostream>
+#include <optional>
+#include <tuple>
+
 #include "glm/geometric.hpp"
 
 #include "basic_types.hpp"
@@ -20,7 +23,8 @@ private:
 	const Color _color;
 };
 
-class Tetrahedron : private BasicProperties
+
+class Tetrahedron : public BasicProperties
 {
 public:
 	Tetrahedron(BRDF brdf, float radius, Color color, Vertex position);
@@ -29,7 +33,7 @@ private:
 	std::vector<Triangle> _triangles;
 };
 
-class Sphere : private BasicProperties
+class Sphere : public BasicProperties
 {
 public:
 	Sphere(BRDF brdf, float radius, Color color, Vertex position, float alpha);

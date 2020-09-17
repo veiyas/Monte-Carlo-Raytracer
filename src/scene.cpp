@@ -61,6 +61,7 @@ Color Scene::intersection(Ray& ray) const
 	Vertex closestIntersectPoint{};
 	Direction closestIntersectNormal{};
 	Color closestIntersectColor{};
+	unsigned closestIntersectSurfaceType = BRDF::DIFFUSE;
 	float minT = 1e+10;
 
 	//TODO put these in single loop
@@ -86,6 +87,7 @@ Color Scene::intersection(Ray& ray) const
 				ray.getStart() + glm::normalize((ray.getEnd() - ray.getStart())).operator*=(intersect.first);
 			closestIntersectNormal = intersect.second.getNormal();
 			closestIntersectColor = intersect.second.getColor();
+			closestIntersectSurfaceType = tetrahedron.getBRDF().getSurfaceType();
 			minT = intersect.first;
 		}
 	}
@@ -99,12 +101,23 @@ Color Scene::intersection(Ray& ray) const
 				ray.getStart() + glm::normalize((ray.getEnd() - ray.getStart())).operator*=(intersect.first);
 			closestIntersectNormal = intersect.second.getNormal();
 			closestIntersectColor = intersect.second.getColor();
+			closestIntersectSurfaceType = sphere.getBRDF().getSurfaceType();
 			minT = intersect.first;
 		}
 	}
+
+	//Risk of stack overflow with recursion?
+	if (closestIntersectSurfaceType == BRDF::REFLECTOR)
+	{
+		Ray reflectedRay = computeReflectedRay(closestIntersectNormal, ray);
+		closestIntersectColor = intersection(reflectedRay);
+	}
+	else if (closestIntersectSurfaceType == BRDF::TRANSPARENT)
+	{
+		//Construct ray tree here and calculate the rest
+	}
+
 	float shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
-	//if(shadow < 0.1f)
-		//std::cout << "Shadow: " << shadow << "\n";
 
 	closestIntersectColor *= (shadow + ambientContribution);
 	return closestIntersectColor;
@@ -157,4 +170,17 @@ bool Scene::objectIsVisible(const std::pair<float, Triangle>& input, const Direc
 		return false;
 	else
 		return true;
+}
+
+Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay) const
+{
+	Direction incomingRayDirection =
+		glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
+	//Angle between normal and incoming ray
+	float angle = glm::angle(normal, incomingRayDirection);
+
+	Direction reflectedDirection =
+		incomingRayDirection - 2.f * (glm::dot(incomingRayDirection, normal)) * normal;
+
+	return Ray{ Vertex{0.f, 0.f, 0.f, 1.f}, Vertex{reflectedDirection, 1.f} };
 }

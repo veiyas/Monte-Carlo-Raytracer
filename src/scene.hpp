@@ -6,6 +6,8 @@
 #include <thread>
 #include <optional>
 
+#include <glm/gtx/vector_angle.hpp>
+
 #include "basic_types.hpp"
 #include "shapes.hpp"
 #include "lights.hpp"
@@ -25,8 +27,8 @@ private:
 	static constexpr float ambientContribution = 0.2f;
 
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
-
 	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;
+	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay) const;
 };
 
 const std::vector<Vertex> floorVertices{
