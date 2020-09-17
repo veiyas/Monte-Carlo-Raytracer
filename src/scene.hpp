@@ -4,7 +4,7 @@
 #include <iostream>
 #include <list>
 #include <thread>
-#include <optional>
+#include <iomanip>
 
 #include <glm/gtx/vector_angle.hpp>
 
@@ -17,14 +17,16 @@ class Scene
 public:
 	Scene();
 
-	Color intersection(Ray& arg) const;
+	Color intersection(Ray& arg);
+	unsigned getNCalculations() const { return nCalculations; }
 private:
 	std::vector<Triangle> _sceneTris;
 	std::vector<Tetrahedron> _tetrahedrons;
 	std::vector<Sphere> _spheres;
 	std::vector<PointLight> _pointLights;
 
-	static constexpr float ambientContribution = 0.2f;
+	static constexpr float _ambientContribution = 0.2f;
+	long long unsigned nCalculations = 0;
 
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
 	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;

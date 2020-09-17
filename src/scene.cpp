@@ -46,17 +46,17 @@ Scene::Scene()
 
 	//Spheres
 	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, 3.f, 1.f }, 1.f);
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 6.f, -1.f, 0.f, 1.f }, 1.f);
-	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 3.f, -3.f, 1.f }, 1.f);
-	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, -3.f, 3.f, 1.f }, 1.f);
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 8.f, -1.f, 2.f, 1.f }, 1.f);
+	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, -3.f, 0.f, 1.f }, 1.f);
+	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 0.f, 1.f }, 1.f);
 	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, 3.f, 1.f }, 1.f);
 	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 3.f, 3.f, 1.f }, 1.f);
 
 	//Lights
-	_pointLights.emplace_back(Vertex(3, 5, 0, 1), Color(1, 1, 1));
+	_pointLights.emplace_back(Vertex(5, 2, 3, 1), Color(1, 1, 1));
 }
 
-Color Scene::intersection(Ray& ray) const
+Color Scene::intersection(Ray& ray)
 {
 	Vertex closestIntersectPoint{};
 	Direction closestIntersectNormal{};
@@ -68,6 +68,7 @@ Color Scene::intersection(Ray& ray) const
 	for (auto& triangle : _sceneTris)
 	{
 		float t = triangle.rayIntersection(ray);
+		++nCalculations;
 		if (t != -1 && t < minT)
 		{
 			closestIntersectPoint =
@@ -81,6 +82,7 @@ Color Scene::intersection(Ray& ray) const
 	for (auto& tetrahedron : _tetrahedrons)
 	{
 		auto intersect = tetrahedron.rayIntersection(ray);
+		++nCalculations;
 		if (intersect.first != -1 && intersect.first < minT)
 		{
 			closestIntersectPoint =
@@ -95,6 +97,7 @@ Color Scene::intersection(Ray& ray) const
 	for (auto& sphere : _spheres)
 	{
 		auto intersect = sphere.rayIntersection(ray);
+		++nCalculations;
 		if (intersect.first != -1 && intersect.first < minT)
 		{
 			closestIntersectPoint =
@@ -107,6 +110,7 @@ Color Scene::intersection(Ray& ray) const
 	}
 
 	//Risk of stack overflow with recursion?
+	//Could be refactored with a loop
 	if (closestIntersectSurfaceType == BRDF::REFLECTOR)
 	{
 		Ray reflectedRay = computeReflectedRay(closestIntersectNormal, ray);
@@ -114,12 +118,12 @@ Color Scene::intersection(Ray& ray) const
 	}
 	else if (closestIntersectSurfaceType == BRDF::TRANSPARENT)
 	{
-		//Construct ray tree here and calculate the rest
+		//Construct ray tree here
 	}
 
 	float shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
 
-	closestIntersectColor *= (shadow + ambientContribution);
+	closestIntersectColor *= (shadow + _ambientContribution);
 	return closestIntersectColor;
 }
 

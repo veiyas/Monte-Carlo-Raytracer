@@ -40,14 +40,15 @@ void Camera::render(Scene& scene)
 
 	auto endTime = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> duration = endTime - startTime;
-	std::cout << "Rendering finished in " << duration.count() << " seconds\n\n";
+	std::cout << "\nRendering finished, " << scene.getNCalculations() <<
+		" calculations completed in " << duration.count() << " seconds\n\n";
 }
 
 void Camera::renderThreadFunction(int row, Scene& scene)
 {
 	// Give some indication of progress in a not so elegant way
 	if (row % 50 == 0)
-		std::cout << (100 * row) / WIDTH << " percent done\n";
+		std::cout << std::setw(2) << (100 * row) / WIDTH << "%\n";
 
 	for (int col = 0; col < WIDTH; ++col)
 	{
