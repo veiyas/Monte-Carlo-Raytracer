@@ -17,6 +17,8 @@ add_executable(${PROJECT_NAME}
   src/lights.cpp
   src/shapes.hpp
   src/shapes.cpp
+  src/brdf.hpp
+  src/brdf.cpp
   src/camera.hpp
   src/camera.cpp
 )

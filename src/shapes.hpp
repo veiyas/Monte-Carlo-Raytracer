@@ -5,27 +5,37 @@
 #include "glm/geometric.hpp"
 
 #include "basic_types.hpp"
+#include "brdf.hpp"
 
-class Tetrahedron
+class BasicProperties
 {
 public:
-	Tetrahedron(float radius, Color color, Vertex position);
-	Color getColor() const;
+	BasicProperties(BRDF brdf, Color color)
+		: _brdf{ std::move(brdf) }, _color{ color } {}
+
+	const BRDF& getBRDF() const { return _brdf; }
+	Color getColor() const { return _color; }
+private:
+	const BRDF _brdf;
+	const Color _color;
+};
+
+class Tetrahedron : private BasicProperties
+{
+public:
+	Tetrahedron(BRDF brdf, float radius, Color color, Vertex position);
 	std::pair<float, Triangle> rayIntersection(Ray& arg) const;
 private:
 	std::vector<Triangle> _triangles;
 };
 
-//TODO duplicate code ????????
-class Sphere
+class Sphere : private BasicProperties
 {
 public:
-	Sphere(float radius, Color color, Vertex position, float alpha);
-	Color getColor() const { return _color; }
+	Sphere(BRDF brdf, float radius, Color color, Vertex position, float alpha);
+	
 	std::pair<float, Triangle> rayIntersection(Ray& arg) const;
 private:
 	const Vertex _position;
 	const float _radius;
-	const Color _color;
-	float _alpha; //TODO transparency stuff, put this in BRDF
 };

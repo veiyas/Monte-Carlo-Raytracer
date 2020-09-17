@@ -1,6 +1,7 @@
 #include "shapes.hpp"
 
-Tetrahedron::Tetrahedron(float radius, Color color, Vertex position)
+Tetrahedron::Tetrahedron(BRDF brdf, float radius, Color color, Vertex position)
+	: BasicProperties{ brdf, color }
 {
 	_triangles.reserve(4);
 
@@ -16,11 +17,6 @@ Tetrahedron::Tetrahedron(float radius, Color color, Vertex position)
 	_triangles.emplace_back(v[0], v[3], v[2], color);
 	_triangles.emplace_back(v[1], v[3], v[0], color);
 	_triangles.emplace_back(v[2], v[3], v[1], color);
-}
-
-Color Tetrahedron::getColor() const
-{
-	return _triangles[0].getColor();
 }
 
 std::pair<float, Triangle> Tetrahedron::rayIntersection(Ray& ray) const
@@ -43,8 +39,9 @@ std::pair<float, Triangle> Tetrahedron::rayIntersection(Ray& ray) const
 		return std::make_pair(-1, Triangle{});
 }
 
-Sphere::Sphere(float radius, Color color, Vertex position, float alpha)
-	: _radius{radius}, _color{color}, _position{position}, _alpha{ alpha }
+Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position, float alpha)
+	: BasicProperties{ brdf, color },
+	_radius { radius }, _position{ position }
 {
 
 }
@@ -84,6 +81,6 @@ std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 	if (d < 0) // Intersection located behind the object
 		return std::make_pair(-1, Triangle());
 
-	return std::make_pair(d, Triangle(glm::vec4(intersection, 1.0), intersectionPointNormal, _color));
+	return std::make_pair(d, Triangle(glm::vec4(intersection, 1.0), intersectionPointNormal, getColor()));
 
 }

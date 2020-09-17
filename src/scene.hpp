@@ -15,14 +15,14 @@ class Scene
 public:
 	Scene();
 
-	Color intersection(Ray& arg); //TODO See if this can be const
+	Color intersection(Ray& arg) const;
 private:
 	std::vector<Triangle> _sceneTris;
 	std::vector<Tetrahedron> _tetrahedrons;
 	std::vector<Sphere> _spheres;
 	std::vector<PointLight> _pointLights;
 
-	static constexpr float ambientContribution = 0.25f;
+	static constexpr float ambientContribution = 0.2f;
 
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
 

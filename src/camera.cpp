@@ -69,43 +69,6 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 	}
 }
 
-void Camera::createImage()
-{
-	// This code assumes the whole scene is well-lit.
-	// See p.13 of lecture 6
-
-	double maxIntensity = 0.0f;
-	for (size_t row = 0; row < HEIGHT; ++row)
-		for (size_t col = 0; col < WIDTH; ++col)
-		{
-			const Color& color = _pixels[row][col]._color;
-			double maxOfPixel = glm::max(glm::max(color.r, color.g), color.b);
-			if (maxOfPixel > maxIntensity)
-				maxIntensity = maxOfPixel;
-		}
-	std::cout << "Maximum intensity found: " << maxIntensity << '\n';
-
-	std::cout << "Start writing to file\n";
-
-	std::ofstream redFile("testingRed.csv", std::ofstream::trunc);
-	std::ofstream greenFile("testingGreen.csv", std::ofstream::trunc);
-	std::ofstream blueFile("testingBlue.csv", std::ofstream::trunc);
-
-	for (size_t row = 0; row < HEIGHT; ++row)
-	{
-		for (size_t col = 0; col < WIDTH; ++col)
-		{
-			redFile   << (int)(_pixels[row][col]._color.r * 255.99f / maxIntensity) << ((col != HEIGHT-1) ? "," : "");
-			greenFile << (int)(_pixels[row][col]._color.g * 255.99f / maxIntensity) << ((col != HEIGHT-1) ? "," : "");
-			blueFile  << (int)(_pixels[row][col]._color.b * 255.99f / maxIntensity) << ((col != HEIGHT-1) ? "," : "");
-		}
-		redFile   << '\n';
-		greenFile << '\n';
-		blueFile  << '\n';
-	}
-
-}
-
 void Camera::createPNG()
 {
 	std::string filename = "output.png";
