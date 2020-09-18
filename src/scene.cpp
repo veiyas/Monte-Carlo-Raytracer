@@ -192,6 +192,18 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 	            Vertex{ glm::vec3(intersectionPoint) + reflectedDirection, 1.f } };
 }
 
+Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, float n1, float n2) const
+{
+	Direction incomingDir = glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
+
+	Direction refractDir = (n1 / n2) * incomingDir + normal * (
+		-(n1 / n2) * glm::dot(normal, incomingDir)
+		- glm::sqrt(1 - glm::pow((n1 / n2), 2) * glm::pow(1.0f - glm::dot(normal, incomingDir), 2))
+	);
+
+	return Ray{ intersectionPoint, Vertex{ glm::vec3{ intersectionPoint } + refractDir, 1.0f } };
+}
+
 Scene::RayTree::RayTree(Ray& initialRay)
 {
 	_head = std::make_unique<Ray>(initialRay);

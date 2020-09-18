@@ -54,6 +54,8 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 	{
 		float yOffset = rng(gen);
 		float zOffset = rng(gen);
+		//float yOffset = 0.5f;
+		//float zOffset = 0.5f;
 
 		Vertex pixelPoint{
 			0.0f,

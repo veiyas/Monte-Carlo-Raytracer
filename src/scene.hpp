@@ -32,6 +32,7 @@ private:
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
 	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;
 	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const;
+	Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, float n1, float n2) const;
 
 	class RayTree
 	{
