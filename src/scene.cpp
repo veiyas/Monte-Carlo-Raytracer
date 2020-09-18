@@ -37,23 +37,19 @@ Scene::Scene()
 
 	// Tetrahedrons
 
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, -3.0f, 0.0f, 1.0f });
+	_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, -3.0f, 0.0f, 1.0f });
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 2.0f, 1.0f });
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
 	// Intersecting the walls
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
-
 	//Spheres
-	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, 3.f, 1.f }, 1.f);
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 8.f, -1.f, 2.f, 1.f }, 1.f);
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 3.f, 1.f }, 1.f);
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, -3.f, 0.f, 1.f }, 1.f);
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 0.f, 1.f }, 1.f);
-	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, 3.f, 1.f }, 1.f);
-	//_spheres.emplace_back(1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 3.f, 3.f, 1.f }, 1.f);
 
 	//Lights
-	_pointLights.emplace_back(Vertex(5, 2, 3, 1), Color(1, 1, 1));
+	_pointLights.emplace_back(Vertex(4, -1, 0, 1), Color(1, 1, 1));
 }
 
 Color Scene::intersection(Ray& ray)
@@ -119,6 +115,7 @@ Color Scene::intersection(Ray& ray)
 	//Could be refactored with a loop
 	if (closestIntersectSurfaceType == BRDF::REFLECTOR)
 	{
+		//Constuct ray tree here
 		Ray reflectedRay = computeReflectedRay(closestIntersectNormal, ray, closestIntersectPoint);
 		closestIntersectColor = intersection(reflectedRay);
 	}
@@ -182,7 +179,7 @@ bool Scene::objectIsVisible(const std::pair<float, Triangle>& input, const Direc
 		return true;
 }
 
-Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, Vertex intersectionPoint) const
+Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const
 {
 	Direction incomingRayDirection =
 		glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
