@@ -41,7 +41,7 @@ Scene::Scene()
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 2.0f, 1.0f });
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
 	// Intersecting the walls
-	//_tetrahedrons.emplace_back(3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 
 	//Spheres
@@ -75,6 +75,12 @@ Color Scene::intersection(Ray& ray)
 				ray.getStart() + glm::normalize((ray.getEnd() - ray.getStart())).operator*=(t);
 			closestIntersectNormal = triangle.getNormal();
 			closestIntersectColor = triangle.getColor();
+
+			//// TEST
+			//if (closestIntersectColor == Color{ 0.84, 0.73, 0.45 })
+			//	closestIntersectSurfaceType = BRDF::REFLECTOR;
+			////
+
 			minT = t;
 		}
 	}
@@ -113,7 +119,7 @@ Color Scene::intersection(Ray& ray)
 	//Could be refactored with a loop
 	if (closestIntersectSurfaceType == BRDF::REFLECTOR)
 	{
-		Ray reflectedRay = computeReflectedRay(closestIntersectNormal, ray);
+		Ray reflectedRay = computeReflectedRay(closestIntersectNormal, ray, closestIntersectPoint);
 		closestIntersectColor = intersection(reflectedRay);
 	}
 	else if (closestIntersectSurfaceType == BRDF::TRANSPARENT)
@@ -176,7 +182,7 @@ bool Scene::objectIsVisible(const std::pair<float, Triangle>& input, const Direc
 		return true;
 }
 
-Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay) const
+Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, Vertex intersectionPoint) const
 {
 	Direction incomingRayDirection =
 		glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
@@ -186,5 +192,6 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay) 
 	Direction reflectedDirection =
 		incomingRayDirection - 2.f * (glm::dot(incomingRayDirection, normal)) * normal;
 
-	return Ray{ Vertex{0.f, 0.f, 0.f, 1.f}, Vertex{reflectedDirection, 1.f} };
+	return Ray{ Vertex{ intersectionPoint },
+	            Vertex{ glm::vec3(intersectionPoint) + reflectedDirection, 1.f } };
 }

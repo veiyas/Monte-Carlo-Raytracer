@@ -30,7 +30,7 @@ private:
 
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
 	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;
-	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay) const;
+	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, Vertex intersectionPoint) const;
 };
 
 const std::vector<Vertex> floorVertices{
