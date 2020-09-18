@@ -11,14 +11,15 @@
 #include "basic_types.hpp"
 #include "shapes.hpp"
 #include "lights.hpp"
+#include "raytree.hpp"
 
 class Scene
 {
 public:
 	Scene();
 
-	Color intersection(Ray& arg);
-	unsigned getNCalculations() const { return nCalculations; }
+	Color raycastScene(Ray& initialRay);
+	unsigned getNCalculations() const { return _nCalculations; }
 private:
 	std::vector<Triangle> _sceneTris;
 	std::vector<Tetrahedron> _tetrahedrons;
@@ -26,11 +27,26 @@ private:
 	std::vector<PointLight> _pointLights;
 
 	static constexpr float _ambientContribution = 0.2f;
-	long long unsigned nCalculations = 0;
+	long long unsigned _nCalculations = 0;
 
+	std::pair<Triangle, unsigned> rayIntersection(Ray& arg);
 	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
 	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;
 	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const;
+
+	class RayTree
+	{
+	public:
+		RayTree(Ray& initialRay);
+		void raytrace(Scene& scene);
+		Color getPixelColor() const { return _finalColor; }
+
+	private:
+		std::unique_ptr<Ray> _head;
+		Color _finalColor;
+		
+		Color traverseRayTree(double firstHitShadowContribution) const;
+	};
 };
 
 const std::vector<Vertex> floorVertices{

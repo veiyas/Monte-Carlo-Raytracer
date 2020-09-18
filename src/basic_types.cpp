@@ -14,6 +14,17 @@ Ray::Ray(Vertex start, Vertex end)
 	//_imagePlaneVertices.push_back(end);
 }
 
+Ray::Ray(Ray& ray)
+{
+	_left = std::move(ray._left);
+	_right = std::move(ray._right);
+	_start = std::move(ray._start);
+	_end = std::move(ray._end);
+	_endTriangle = std::move(ray._endTriangle);
+
+	_rayColor = ray._rayColor;
+}
+
 void Ray::initVertexList()
 {
 	_imagePlaneVertices.reserve(72);

@@ -36,7 +36,7 @@ private:
 class Sphere : public BasicProperties
 {
 public:
-	Sphere(BRDF brdf, float radius, Color color, Vertex position, float alpha);
+	Sphere(BRDF brdf, float radius, Color color, Vertex position);
 	
 	std::pair<float, Triangle> rayIntersection(Ray& arg) const;
 private:

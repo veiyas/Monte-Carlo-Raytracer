@@ -39,7 +39,7 @@ std::pair<float, Triangle> Tetrahedron::rayIntersection(Ray& ray) const
 		return std::make_pair(-1, Triangle{});
 }
 
-Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position, float alpha)
+Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position)
 	: BasicProperties{ brdf, color },
 	_radius { radius }, _position{ position }
 {

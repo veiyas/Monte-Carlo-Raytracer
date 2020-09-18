@@ -37,22 +37,31 @@ Scene::Scene()
 
 	// Tetrahedrons
 
-	_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, -3.0f, 0.0f, 1.0f });
+	//These two objects will show "shadow rash"
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, -3.0f, 0.0f, 1.0f });
+	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 3.f, 1.f };
+
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 9.0f, -1.0f, 2.0f, 1.0f });
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
 	// Intersecting the walls
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 3.f, 1.f }, 1.f);
-	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, -3.f, 0.f, 1.f }, 1.f);
-	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 0.f, 1.f }, 1.f);
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, -3.f, 0.f, 1.f });
+	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 0.f, 1.f });
 
 	//Lights
-	_pointLights.emplace_back(Vertex(4, -1, 0, 1), Color(1, 1, 1));
+	_pointLights.emplace_back(Vertex(0, 3, 4, 1), Color(1, 1, 1));
 }
 
-Color Scene::intersection(Ray& ray)
+Color Scene::raycastScene(Ray& initialRay)
+{
+	RayTree tree{ initialRay };
+	tree.raytrace(*this);
+	return tree.getPixelColor();
+}
+
+std::pair<Triangle, unsigned> Scene::rayIntersection(Ray& ray)
 {
 	Vertex closestIntersectPoint{};
 	Direction closestIntersectNormal{};
@@ -64,7 +73,7 @@ Color Scene::intersection(Ray& ray)
 	for (auto& triangle : _sceneTris)
 	{
 		float t = triangle.rayIntersection(ray);
-		++nCalculations;
+		++_nCalculations;
 		if (t != -1 && t < minT)
 		{
 			closestIntersectPoint =
@@ -84,7 +93,7 @@ Color Scene::intersection(Ray& ray)
 	for (auto& tetrahedron : _tetrahedrons)
 	{
 		auto intersect = tetrahedron.rayIntersection(ray);
-		++nCalculations;
+		++_nCalculations;
 		if (intersect.first != -1 && intersect.first < minT)
 		{
 			closestIntersectPoint =
@@ -99,7 +108,7 @@ Color Scene::intersection(Ray& ray)
 	for (auto& sphere : _spheres)
 	{
 		auto intersect = sphere.rayIntersection(ray);
-		++nCalculations;
+		++_nCalculations;
 		if (intersect.first != -1 && intersect.first < minT)
 		{
 			closestIntersectPoint =
@@ -110,24 +119,14 @@ Color Scene::intersection(Ray& ray)
 			minT = intersect.first;
 		}
 	}
-
-	//Risk of stack overflow with recursion?
-	//Could be refactored with a loop
-	if (closestIntersectSurfaceType == BRDF::REFLECTOR)
-	{
-		//Constuct ray tree here
-		Ray reflectedRay = computeReflectedRay(closestIntersectNormal, ray, closestIntersectPoint);
-		closestIntersectColor = intersection(reflectedRay);
-	}
-	else if (closestIntersectSurfaceType == BRDF::TRANSPARENT)
-	{
-		//Construct ray tree here
-	}
-
 	float shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
-
 	closestIntersectColor *= (shadow + _ambientContribution);
-	return closestIntersectColor;
+
+	ray.setColor(closestIntersectColor);
+
+	return std::make_pair(Triangle{
+		closestIntersectPoint, closestIntersectNormal, closestIntersectColor }, closestIntersectSurfaceType);
+;
 }
 
 float Scene::shadowRayContribution(const Vertex& point, const Direction& normal) const
@@ -191,4 +190,71 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 
 	return Ray{ Vertex{ intersectionPoint },
 	            Vertex{ glm::vec3(intersectionPoint) + reflectedDirection, 1.f } };
+}
+
+Scene::RayTree::RayTree(Ray& initialRay)
+{
+	_head = std::make_unique<Ray>(initialRay);
+}
+
+void Scene::RayTree::raytrace(Scene& scene)
+{
+	Ray* currentRay = _head.get();
+	auto currentIntersection = scene.rayIntersection(*currentRay);
+
+	if (currentIntersection.second == BRDF::DIFFUSE) //Hit wall immidiately
+	{
+		_finalColor = _head->getColor();
+		return;
+	}
+
+	double firstHitShadow = scene.shadowRayContribution(
+		currentIntersection.first.getPoint(), currentIntersection.first.getNormal());
+
+	//Construct ray tree
+	while (currentRay)
+	{
+		if (currentIntersection.second == BRDF::REFLECTOR)
+		{
+			Ray reflectedRay = scene.computeReflectedRay(
+				currentIntersection.first.getNormal(),
+				*currentRay,
+				currentIntersection.first.getPoint());
+
+			currentRay->setLeft(reflectedRay);
+			currentRay = currentRay->getLeft().get();
+
+			currentIntersection = scene.rayIntersection(*currentRay);
+		}
+		else if (currentIntersection.second == BRDF::TRANSPARENT)
+		{
+			//TODO refraction in tree construction
+		}
+		else if (currentIntersection.second == BRDF::DIFFUSE)
+			break;
+	}
+
+	_finalColor = traverseRayTree(firstHitShadow);
+}
+
+Color Scene::RayTree::traverseRayTree(double firstHitShadowContribution) const
+{
+	Ray* currentNode = _head.get();
+	Color result{};
+
+	while (currentNode)
+	{
+		if (currentNode->getLeft().get()) //A reflection exists
+			currentNode = currentNode->getLeft().get();
+		else if (currentNode->getRight().get()) //A refraction
+		{}
+			//TODO refraction in tree traversal
+		else if (!currentNode->getLeft().get()) //No reflection
+		{
+			result = currentNode->getColor() * firstHitShadowContribution;
+			break;
+		}
+	}
+
+	return result;
 }

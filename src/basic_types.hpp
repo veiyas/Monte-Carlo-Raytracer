@@ -16,20 +16,34 @@ typedef glm::vec<3, double> Color;
 class Ray
 {
 public:
+	//For easier accesses
+	friend class RayTree;
+
 	Ray(Vertex start, Vertex end);
+	Ray(Ray& ray);
 
 	static void initVertexList();
+
+	void setLeft(Ray& ray) { _left = std::make_unique<Ray>(ray); }
+	std::unique_ptr<Ray>& getLeft() { return _left; }
+	void setRight(Ray& ray) { _right = std::make_unique<Ray>(ray); }
+	std::unique_ptr<Ray>& getRight() { return _right; }
+
 	Vertex getStart() const { return *_start; }
 	Vertex getEnd() const { return *_end; }
+	Color getColor() const { return _rayColor; }
+	void setColor(const Color color) { _rayColor = color; }
 private:
 	static std::vector<Vertex> _imagePlaneVertices; //?????
+
+	//Left: reflected, Right: refracted
+	std::unique_ptr<Ray> _left;
+	std::unique_ptr<Ray> _right;
 
 	Color _rayColor;
 	std::unique_ptr<Vertex> _start;
 	std::unique_ptr<Vertex> _end;
 	std::unique_ptr<Vertex> _endTriangle;
-
-	std::mutex arrayLock;
 };
 
 class Pixel
@@ -51,6 +65,7 @@ public:
 	Color getColor() const { return _color; }
 	Direction getNormal() const { return _normal; }
 	Vertex getCenter() const;
+	Vertex getPoint() const { return _v1; };
 	float rayIntersection(Ray& arg) const;
 private:
 	Vertex _v1, _v2, _v3;
