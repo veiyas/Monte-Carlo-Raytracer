@@ -11,7 +11,6 @@
 #include "basic_types.hpp"
 #include "shapes.hpp"
 #include "lights.hpp"
-#include "raytree.hpp"
 
 class Scene
 {
