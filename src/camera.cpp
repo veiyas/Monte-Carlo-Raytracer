@@ -36,6 +36,8 @@ void Camera::render(Scene& scene)
 		{
 			thread.join();
 		}
+
+		//std::cout << row << "\n";
 	}
 
 	auto endTime = std::chrono::high_resolution_clock::now();

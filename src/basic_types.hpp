@@ -32,12 +32,15 @@ public:
 
 	Vertex getStart() const { return *_start; }
 	Vertex getEnd() const { return *_end; }
+	bool isInsideObject() const { return _isInsideObject; }
 	Color getColor() const { return _rayColor; }
 	void setColor(const Color color) { _rayColor = color; }
 private:
 	std::unique_ptr<Vertex> _end;
 	std::unique_ptr<Vertex> _start;
 	static std::vector<Vertex> _imagePlaneVertices; //?????
+
+	bool _isInsideObject = false;
 
 	//Left: reflected, Right: refracted
 	std::unique_ptr<Ray> _left;

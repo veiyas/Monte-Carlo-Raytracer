@@ -41,13 +41,13 @@ Scene::Scene()
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.0f, Color{ 0.15, 0.98, 0.38 }, Vertex{ 9.0f, -3.0f, 0.0f, 1.0f });
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 3.f, 1.f };
 
-	_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 8.0f, 0.0f, 0.0f, 1.0f });
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 2.0f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 8.0f, 0.0f, 0.0f, 1.0f });
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
 	// Intersecting the walls
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
-	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, 0.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 7.f, 0.f, -2.3f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 0.f, 1.f });
 
 	//Lights
@@ -186,10 +186,20 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 	            Vertex{ glm::vec3(intersectionPoint) + reflectedDirection, 1.f } };
 }
 
-Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, float n1, float n2) const
+Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const
 {
 	Direction incomingDir = glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
-
+	float n1, n2;
+	if (insideObject)
+	{
+		n1 = 1.1f;
+		n2 = 1.f;
+	}
+	else
+	{
+		n1 = 1.f;
+		n2 = 1.1f;
+	}
 	float n1n2 = n1 / n2;
 	float NI = glm::dot(normal, incomingDir);
 	float sqrtExpression = 1 - ((glm::pow(n1n2, 2)) * (1 - glm::pow(NI, 2)));
@@ -204,6 +214,7 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 Scene::RayTree::RayTree(Ray& initialRay)
 {
 	_head = std::make_unique<Ray>(initialRay);
+	_treeSize = 1;
 }
 
 void Scene::RayTree::raytrace(Scene& scene)
@@ -224,15 +235,25 @@ void Scene::RayTree::raytrace(Scene& scene)
 	std::queue<Ray*> rays;
 	rays.push(_head.get());
 	//Construct ray tree
-	size_t counter = 100;
+	size_t counter{ 0 };
+	constexpr size_t limit{ 1 };
 	while (!rays.empty())
 	{
 		currentIntersection = scene.rayIntersection(*rays.front());
 		currentRay = rays.front();
-		//std::cout << "type: " << currentIntersection.second << "\n";
 		rays.pop();
+		//std::cout << "type: " << currentIntersection.second << "\n";
+		//std::cout << "size: " << rays.size() << "\n";
 
-		if (currentIntersection.second == BRDF::REFLECTOR)
+		if (_treeSize > 30)
+			break;
+		if (counter >= limit)
+		{
+			while (rays.size() > 1)
+				rays.pop();
+			counter = 0;
+		}
+		if (currentIntersection.second == BRDF::REFLECTOR && counter < limit)
 		{
 			Ray reflectedRay = scene.computeReflectedRay(
 				currentIntersection.first.getNormal(),
@@ -242,37 +263,35 @@ void Scene::RayTree::raytrace(Scene& scene)
 			currentRay->setLeft(std::move(reflectedRay));
 			rays.push(currentRay->getLeft().get());
 
-			//currentRay = currentRay->getLeft().get();
+			++_treeSize;
 		}
-		else if (currentIntersection.second == BRDF::TRANSPARENT) //This loops forever :(
+		else if (currentIntersection.second == BRDF::TRANSPARENT && counter < limit)
 		{
-			//std::cout << "HERE\n";
-			Ray reflectedRay = scene.computeReflectedRay(
-				currentIntersection.first.getNormal(),
-				*currentRay,
-				currentIntersection.first.getPoint());
+			if (!currentRay->isInsideObject())
+			{
+				Ray reflectedRay = scene.computeReflectedRay(
+					currentIntersection.first.getNormal(),
+					*currentRay,
+					currentIntersection.first.getPoint());
+
+				currentRay->setLeft(std::move(reflectedRay));
+				rays.push(currentRay->getLeft().get());
+				++_treeSize;
+			}
 			Ray refractedRay = scene.computeRefractedRay(
 				currentIntersection.first.getNormal(),
 				*currentRay,
-				currentIntersection.first.getPoint(), 1.f, 1.2f); //TODO Store current medium somehow
+				currentIntersection.first.getPoint(), currentRay->isInsideObject());
 
-			currentRay->setLeft(std::move(reflectedRay));
 			currentRay->setRight(std::move(refractedRay));
-
-			rays.push(currentRay->getLeft().get());
 			rays.push(currentRay->getRight().get());
 
-			//currentRefracted = currentRay->getRight().get();
-			//currentRay = currentRay->getLeft().get();
+			++_treeSize;
 			++counter;
-		}
-
-		if (counter > 100)
-		{
-			counter = 0;
-		}
+		}		
 	}
 
+	//std::cout << "Tree size: " << _treeSize << "\n";
 	_finalColor = traverseRayTree(firstHitShadow);
 }
 
@@ -292,7 +311,9 @@ Color Scene::RayTree::traverseRayTree(double firstHitShadowContribution) const
 
 		if (currentNode->getLeft().get() && !currentNode->getRight().get()) //Reflection
 		{
-			rays.push(currentNode->getLeft().get());
+			//rays.push(currentNode->getLeft().get());
+			result += currentNode->getColor();
+			break;
 		}
 		else if (!currentNode->getLeft().get() && currentNode->getRight().get()) //Reflection
 		{
@@ -300,7 +321,7 @@ Color Scene::RayTree::traverseRayTree(double firstHitShadowContribution) const
 		}
 		else if (currentNode->getLeft().get() && currentNode->getRight().get()) //Refraction
 		{
-			rays.push(currentNode->getLeft().get());
+			//rays.push(currentNode->getLeft().get());
 			rays.push(currentNode->getRight().get());
 		}
 		else if (!(currentNode->getLeft().get() && currentNode->getRight().get()))
