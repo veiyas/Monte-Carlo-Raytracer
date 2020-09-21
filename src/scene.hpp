@@ -5,6 +5,7 @@
 #include <list>
 #include <thread>
 #include <iomanip>
+#include <queue>
 
 #include <glm/gtx/vector_angle.hpp>
 
