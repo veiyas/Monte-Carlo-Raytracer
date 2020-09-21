@@ -192,13 +192,13 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 	float n1, n2;
 	if (insideObject)
 	{
-		n1 = 1.1f;
+		n1 = 1.15f;
 		n2 = 1.f;
 	}
 	else
 	{
 		n1 = 1.f;
-		n2 = 1.1f;
+		n2 = 1.15f;
 	}
 	float n1n2 = n1 / n2;
 	float NI = glm::dot(normal, incomingDir);
@@ -290,8 +290,6 @@ void Scene::RayTree::raytrace(Scene& scene)
 			++counter;
 		}		
 	}
-
-	//std::cout << "Tree size: " << _treeSize << "\n";
 	_finalColor = traverseRayTree(firstHitShadow);
 }
 
@@ -303,6 +301,7 @@ Color Scene::RayTree::traverseRayTree(double firstHitShadowContribution) const
 	std::queue<Ray*> rays;
 	rays.push(_head.get());
 
+	//TODO Fix tree traversal
 	Ray* currentNode;
 	while (!rays.empty())
 	{
