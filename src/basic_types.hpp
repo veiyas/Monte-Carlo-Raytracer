@@ -13,6 +13,8 @@ typedef glm::vec4 Vertex;
 typedef glm::vec3 Direction;
 typedef glm::vec<3, double> Color;
 
+class Triangle;
+
 class Ray
 {
 public:
@@ -26,12 +28,18 @@ public:
 	static void initVertexList();
 
 	void setLeft(Ray&& ray) { _left = std::make_unique<Ray>(ray); }
-	std::unique_ptr<Ray>& getLeft() { return _left; }
+	Ray* getLeft() { return _left.get(); }
 	void setRight(Ray&& ray) { _right = std::make_unique<Ray>(ray); }
-	std::unique_ptr<Ray>& getRight() { return _right; }
+	Ray* getRight() { return _right.get(); }
+	void setParent(Ray* ray) { _parent = ray; }
+	Ray* getParent() { return _parent; }
 
 	Vertex getStart() const { return *_start; }
 	Vertex getEnd() const { return *_end; }
+
+	Triangle* getEndTriangle() const { return _endTriangle.get(); }
+	void setEndTriangle(Triangle& tri) { _endTriangle = std::make_unique<Triangle>(tri); }
+
 	bool isInsideObject() const { return _isInsideObject; }
 	Color getColor() const { return _rayColor; }
 	void setColor(const Color color) { _rayColor = color; }
@@ -45,9 +53,10 @@ private:
 	//Left: reflected, Right: refracted
 	std::unique_ptr<Ray> _left;
 	std::unique_ptr<Ray> _right;
+	Ray* _parent = nullptr;
 
 	Color _rayColor;
-	std::unique_ptr<Vertex> _endTriangle;
+	std::unique_ptr<Triangle> _endTriangle;
 };
 
 class Pixel

@@ -116,16 +116,16 @@ std::pair<Triangle, unsigned> Scene::rayIntersection(Ray& ray)
 	float shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
 	closestIntersectColor *= (shadow + _ambientContribution);
 
+	Triangle intersectedTri{ closestIntersectPoint, closestIntersectNormal, closestIntersectColor };
 	ray.setColor(closestIntersectColor);
-
-	return std::make_pair(Triangle{
-		closestIntersectPoint, closestIntersectNormal, closestIntersectColor }, closestIntersectSurfaceType);
+	ray.setEndTriangle(intersectedTri);
+	return std::make_pair(intersectedTri, closestIntersectSurfaceType);
 ;
 }
 
-float Scene::shadowRayContribution(const Vertex& point, const Direction& normal) const
+double Scene::shadowRayContribution(const Vertex& point, const Direction& normal) const
 {
-	float lightContribution = 0.f;
+	double lightContribution = 0.f;
 
 	for (const auto& light : _pointLights)
 	{
@@ -215,45 +215,38 @@ Scene::RayTree::RayTree(Ray& initialRay)
 {
 	_head = std::make_unique<Ray>(initialRay);
 	_treeSize = 1;
+	_reflectionContrib = 1.0 - _transmitionContrib;
 }
 
 void Scene::RayTree::raytrace(Scene& scene)
 {
-	Ray* currentRay = _head.get();
-	Ray* currentRefracted = nullptr;
-	auto currentIntersection = scene.rayIntersection(*currentRay);
+	auto currentIntersection = scene.rayIntersection(*_head.get());
 
 	if (currentIntersection.second == BRDF::DIFFUSE) //Hit wall immidiately
 	{
 		_finalColor = _head->getColor();
 		return;
 	}
+	else
+		constructRayTree(scene);
+	
+	_finalColor = traverseRayTree(scene, _head.get());
+}
 
-	double firstHitShadow = scene.shadowRayContribution(
-		currentIntersection.first.getPoint(), currentIntersection.first.getNormal());
+void Scene::RayTree::constructRayTree(Scene& scene) const
+{
+	Ray* currentRay{};
+	std::pair<Triangle, unsigned> currentIntersection{};
 
 	std::queue<Ray*> rays;
 	rays.push(_head.get());
-	//Construct ray tree
-	size_t counter{ 0 };
-	constexpr size_t limit{ 1 };
 	while (!rays.empty())
 	{
 		currentIntersection = scene.rayIntersection(*rays.front());
 		currentRay = rays.front();
 		rays.pop();
-		//std::cout << "type: " << currentIntersection.second << "\n";
-		//std::cout << "size: " << rays.size() << "\n";
 
-		if (_treeSize > 30)
-			break;
-		if (counter >= limit)
-		{
-			while (rays.size() > 1)
-				rays.pop();
-			counter = 0;
-		}
-		if (currentIntersection.second == BRDF::REFLECTOR && counter < limit)
+		if (currentIntersection.second == BRDF::REFLECTOR)
 		{
 			Ray reflectedRay = scene.computeReflectedRay(
 				currentIntersection.first.getNormal(),
@@ -261,11 +254,11 @@ void Scene::RayTree::raytrace(Scene& scene)
 				currentIntersection.first.getPoint());
 
 			currentRay->setLeft(std::move(reflectedRay));
-			rays.push(currentRay->getLeft().get());
+			currentRay->getLeft()->setParent(currentRay);
 
-			++_treeSize;
+			rays.push(currentRay->getLeft());
 		}
-		else if (currentIntersection.second == BRDF::TRANSPARENT && counter < limit)
+		else if (currentIntersection.second == BRDF::TRANSPARENT)
 		{
 			if (!currentRay->isInsideObject())
 			{
@@ -275,8 +268,9 @@ void Scene::RayTree::raytrace(Scene& scene)
 					currentIntersection.first.getPoint());
 
 				currentRay->setLeft(std::move(reflectedRay));
-				rays.push(currentRay->getLeft().get());
-				++_treeSize;
+				currentRay->getLeft()->setParent(currentRay);
+
+				rays.push(currentRay->getLeft());
 			}
 			Ray refractedRay = scene.computeRefractedRay(
 				currentIntersection.first.getNormal(),
@@ -284,50 +278,35 @@ void Scene::RayTree::raytrace(Scene& scene)
 				currentIntersection.first.getPoint(), currentRay->isInsideObject());
 
 			currentRay->setRight(std::move(refractedRay));
-			rays.push(currentRay->getRight().get());
-
-			++_treeSize;
-			++counter;
-		}		
+			currentRay->getRight()->setParent(currentRay);
+			rays.push(currentRay->getRight());
+		}
 	}
-	_finalColor = traverseRayTree(firstHitShadow);
 }
 
-Color Scene::RayTree::traverseRayTree(double firstHitShadowContribution) const
+Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 {
+	Ray* current = input;
 	Color result{};
-
-	//"You add a small diffuse light component at every ray-object intersection." ???
-	std::queue<Ray*> rays;
-	rays.push(_head.get());
-
-	//TODO Fix tree traversal
-	Ray* currentNode;
-	while (!rays.empty())
+	while (current != nullptr)
 	{
-		currentNode = rays.front();
-		rays.pop();
-
-		if (currentNode->getLeft().get() && !currentNode->getRight().get()) //Reflection
+		if (!input->getLeft() && !input->getRight())
 		{
-			//rays.push(currentNode->getLeft().get());
-			result += currentNode->getColor();
+			double shadow = scene.shadowRayContribution(input->getEndTriangle()->getCenter(), input->getEndTriangle()->getNormal());
+			result = input->getColor() * shadow;
 			break;
 		}
-		else if (!currentNode->getLeft().get() && currentNode->getRight().get()) //Reflection
+		else if (input->getLeft() && !input->getRight())
+			current = current->getLeft();
+		else if (!input->getLeft() && input->getRight())
+			current = current->getRight();
+		else if (input->getLeft() && input->getRight())
 		{
-			rays.push(currentNode->getRight().get());
-		}
-		else if (currentNode->getLeft().get() && currentNode->getRight().get()) //Refraction
-		{
-			//rays.push(currentNode->getLeft().get());
-			rays.push(currentNode->getRight().get());
-		}
-		else if (!(currentNode->getLeft().get() && currentNode->getRight().get()))
-		{
-			result += currentNode->getColor();
+			Color leftSubTreeColor = traverseRayTree(scene, current->getLeft()) * _reflectionContrib;
+			Color rightSubTreeColor = traverseRayTree(scene, current->getRight()) * _transmitionContrib;
+			result = leftSubTreeColor + rightSubTreeColor;
 			break;
 		}
 	}
-	return result * firstHitShadowContribution;
+	return result;
 }

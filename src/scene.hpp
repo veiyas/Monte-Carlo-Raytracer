@@ -30,8 +30,9 @@ private:
 	long long unsigned _nCalculations = 0;
 
 	std::pair<Triangle, unsigned> rayIntersection(Ray& arg);
-	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
+	double shadowRayContribution(const Vertex& point, const Direction& normal) const;
 	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;
+	//TODO these can probably be static
 	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const;
 	Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const;
 
@@ -46,8 +47,13 @@ private:
 		std::unique_ptr<Ray> _head;
 		Color _finalColor;
 		size_t _treeSize;
+
+		double _transmitionContrib = 0.95;
+		double _reflectionContrib;
 		
-		Color traverseRayTree(double firstHitShadowContribution) const;
+		void constructRayTree(Scene& scene) const;
+		Color traverseRayTree(const Scene& scene) const;
+		Color findRayContribution(const Scene& scene, Ray* input) const;
 	};
 };
 
