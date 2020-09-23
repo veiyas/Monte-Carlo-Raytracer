@@ -18,9 +18,6 @@ class Triangle;
 class Ray
 {
 public:
-	//For easier accesses
-	friend class RayTree;
-
 	Ray(Vertex start, Vertex end);
 	Ray(Ray& ray);
 	Ray(Ray&& ray) = default;
@@ -44,12 +41,16 @@ public:
 	bool isInsideObject() const { return _isInsideObject; }
 	Color getColor() const { return _rayColor; }
 	void setColor(const Color color) { _rayColor = color; }
+
+	double getShadow() const { return _shadow; }
+	void setShadow(double shadow) { _shadow = shadow; }
 private:
 	std::unique_ptr<Vertex> _end;
 	std::unique_ptr<Vertex> _start;
 	static std::vector<Vertex> _imagePlaneVertices; //?????
 
 	bool _isInsideObject = false;
+	double _shadow;
 
 	//Left: reflected, Right: refracted
 	std::unique_ptr<Ray> _left;

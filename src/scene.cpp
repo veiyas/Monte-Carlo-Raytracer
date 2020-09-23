@@ -42,8 +42,8 @@ Scene::Scene()
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR}, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 0.f, -2.f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 1.f, 0.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT}, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 7.f, -2.f, -1.f, 1.f });
 
 	//Lights
 	_pointLights.emplace_back(Vertex(0, 3, 4, 1), Color(1, 1, 1));
@@ -108,11 +108,18 @@ std::pair<Triangle, unsigned> Scene::rayIntersection(Ray& ray)
 			minT = intersect.first;
 		}
 	}
-	float shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
-	closestIntersectColor *= (shadow + _ambientContribution);
+	double shadow = 1.f;
+	if (closestIntersectSurfaceType != BRDF::TRANSPARENT)
+	{
+		shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
+		closestIntersectColor *= (shadow + _ambientContribution);
+	}
+	else
+		closestIntersectColor *= _ambientContribution;
 
 	Triangle intersectedTri{ closestIntersectPoint, closestIntersectNormal, closestIntersectColor };
 	ray.setColor(closestIntersectColor);
+	ray.setShadow(shadow);
 	ray.setEndTriangle(intersectedTri);
 	return std::make_pair(intersectedTri, closestIntersectSurfaceType);
 ;
@@ -209,6 +216,7 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 Scene::RayTree::RayTree(Ray& initialRay)
 {
 	_head = std::make_unique<Ray>(initialRay);
+	_head->setShadow(1.0);
 	_treeSize = 1;
 	_reflectionContrib = 1.0 - _transmissionContrib;
 }
@@ -219,54 +227,49 @@ void Scene::RayTree::raytrace(Scene& scene)
 
 	if (currentIntersection.second == BRDF::DIFFUSE) //Hit wall immidiately
 	{
-		_finalColor = _head->getColor();
+		_finalColor = _head->getEndTriangle()->getColor();
 	}
 	else
 	{
-		constructRayTree(scene);
+		constructRayTree(scene, currentIntersection.second, currentIntersection);
 		_finalColor = traverseRayTree(scene, _head.get());
 	}
 }
 
-void Scene::RayTree::constructRayTree(Scene& scene) const
+void Scene::RayTree::constructRayTree(Scene& scene, unsigned firstHitSurfaceType, std::pair<Triangle, unsigned>& firstHit) const
 {
-	Ray* currentRay{};
-	std::pair<Triangle, unsigned> currentIntersection{};
-
-	
-	size_t rayTreeCounter{ 0 };
-
 	std::queue<Ray*> rays;
-	rays.push(_head.get());
+	Ray* currentRay = _head.get();
+	if (firstHitSurfaceType == BRDF::REFLECTOR)
+	{
+		attachReflected(scene, firstHit.first, currentRay);
+		rays.push(currentRay->getLeft());
+	}
+	else if (firstHitSurfaceType == BRDF::TRANSPARENT)
+	{
+		attachReflected(scene, firstHit.first, currentRay);
+		attachRefracted(scene, firstHit.first, currentRay);
+		rays.push(currentRay->getLeft());
+		rays.push(currentRay->getRight());
+	}
+
+	std::pair<Triangle, unsigned> currentIntersection{};	
+	size_t rayTreeCounter{ 0 };
 	while (!rays.empty() && rayTreeCounter < maxTreeSize)
 	{
-		currentIntersection = scene.rayIntersection(*rays.front());
 		currentRay = rays.front();
+		currentIntersection = scene.rayIntersection(*currentRay);
 		rays.pop();
 
 		if (currentIntersection.second == BRDF::REFLECTOR)
 		{
-			Ray reflectedRay = scene.computeReflectedRay(
-				currentIntersection.first.getNormal(),
-				*currentRay,
-				currentIntersection.first.getPoint());
-
-			currentRay->setLeft(std::move(reflectedRay));
-			currentRay->getLeft()->setParent(currentRay);
-
+			attachReflected(scene, currentIntersection.first, currentRay);
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
 		}
 		else if (currentIntersection.second == BRDF::TRANSPARENT)
 		{
-			Ray reflectedRay = scene.computeReflectedRay(
-				currentIntersection.first.getNormal(),
-				*currentRay,
-				currentIntersection.first.getPoint());
-
-			currentRay->setLeft(std::move(reflectedRay));
-			currentRay->getLeft()->setParent(currentRay);
-
+			attachReflected(scene, currentIntersection.first, currentRay);
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
 
@@ -283,20 +286,22 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 			}
 			else if(!currentRay->isInsideObject() || willRefract)
 			{
-				Ray refractedRay = scene.computeRefractedRay(
-					currentIntersection.first.getNormal(),
-					*currentRay,
-					currentIntersection.first.getPoint(), currentRay->isInsideObject());
-				refractedRay.setInsideObject(true);
-
-				currentRay->setRight(std::move(refractedRay));
-				currentRay->getRight()->setParent(currentRay);
+				attachRefracted(scene, currentIntersection.first, currentRay);
 				rays.push(currentRay->getRight());
-
 				++rayTreeCounter;
 			}
 		}
 	}
+}
+
+double Scene::RayTree::findTotalShadow(Ray* input) const
+{
+	Ray* current = input;
+	while (current->getParent())
+	{
+		current = current->getParent();
+	}
+	return current->getShadow();
 }
 
 Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
@@ -310,7 +315,7 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 		Ray* right = current->getRight();
 
 		if (left == nullptr && right == nullptr)
-			return  current->getEndTriangle()->getColor();
+			return  current->getEndTriangle()->getColor() * findTotalShadow(current);
 		else if (left && right == nullptr)
 			current = current->getLeft();
 		else if (left == nullptr && right)
@@ -323,4 +328,27 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 		}
 	}
 	return result;
+}
+
+void Scene::RayTree::attachReflected(const Scene& scene, Triangle& hitTri, Ray* currentRay) const
+{
+	Ray reflectedRay = scene.computeReflectedRay(
+		hitTri.getNormal(),
+		*currentRay,
+		hitTri.getPoint());
+
+	currentRay->setLeft(std::move(reflectedRay));
+	currentRay->getLeft()->setParent(currentRay);
+}
+
+void Scene::RayTree::attachRefracted(const Scene& scene, Triangle& hitTri, Ray* currentRay) const
+{
+	Ray refractedRay = scene.computeRefractedRay(
+		hitTri.getNormal(),
+		*currentRay,
+		hitTri.getPoint(), currentRay->isInsideObject());
+	refractedRay.setInsideObject(true);
+
+	currentRay->setRight(std::move(refractedRay));
+	currentRay->getRight()->setParent(currentRay);
 }

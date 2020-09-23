@@ -54,8 +54,11 @@ private:
 		constexpr static double _transmissionContrib = 0.99;
 		double _reflectionContrib;
 		
-		void constructRayTree(Scene& scene) const;
+		void constructRayTree(Scene& scene, unsigned firstHitSurfaceType, std::pair<Triangle, unsigned>& firstHit) const;
+		double findTotalShadow(Ray* input) const;
 		Color traverseRayTree(const Scene& scene, Ray* input) const;
+		void attachReflected(const Scene& scene, Triangle& hitTri, Ray* currentRay) const;
+		void attachRefracted(const Scene& scene, Triangle& hitTri, Ray* currentRay) const;
 	};
 };
 
