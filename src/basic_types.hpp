@@ -28,9 +28,9 @@ public:
 	static void initVertexList();
 
 	void setLeft(Ray&& ray) { _left = std::make_unique<Ray>(ray); }
-	Ray* getLeft() { return _left.get(); }
+	Ray* getLeft() { return  _left ? _left.get() : nullptr; }
 	void setRight(Ray&& ray) { _right = std::make_unique<Ray>(ray); }
-	Ray* getRight() { return _right.get(); }
+	Ray* getRight() { return _right ? _right.get() : nullptr; }
 	void setParent(Ray* ray) { _parent = ray; }
 	Ray* getParent() { return _parent; }
 
@@ -40,6 +40,7 @@ public:
 	Triangle* getEndTriangle() const { return _endTriangle.get(); }
 	void setEndTriangle(Triangle& tri) { _endTriangle = std::make_unique<Triangle>(tri); }
 
+	void setInsideObject(bool isInside) { _isInsideObject = isInside; }
 	bool isInsideObject() const { return _isInsideObject; }
 	Color getColor() const { return _rayColor; }
 	void setColor(const Color color) { _rayColor = color; }

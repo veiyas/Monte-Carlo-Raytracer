@@ -27,6 +27,8 @@ private:
 	std::vector<PointLight> _pointLights;
 
 	static constexpr float _ambientContribution = 0.2f;
+	static constexpr float _airIndex = 1.f;
+	static constexpr float _glassIndex = 1.5f;
 	long long unsigned _nCalculations = 0;
 
 	std::pair<Triangle, unsigned> rayIntersection(Ray& arg);
@@ -48,12 +50,12 @@ private:
 		Color _finalColor;
 		size_t _treeSize;
 
-		double _transmitionContrib = 0.95;
+		constexpr static size_t maxTreeSize = 512;
+		constexpr static double _transmissionContrib = 0.99;
 		double _reflectionContrib;
 		
 		void constructRayTree(Scene& scene) const;
-		Color traverseRayTree(const Scene& scene) const;
-		Color findRayContribution(const Scene& scene, Ray* input) const;
+		Color traverseRayTree(const Scene& scene, Ray* input) const;
 	};
 };
 
