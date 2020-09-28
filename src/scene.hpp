@@ -5,6 +5,7 @@
 #include <list>
 #include <thread>
 #include <iomanip>
+#include <queue>
 
 #include <glm/gtx/vector_angle.hpp>
 
@@ -26,13 +27,16 @@ private:
 	std::vector<PointLight> _pointLights;
 
 	static constexpr float _ambientContribution = 0.2f;
+	static constexpr float _airIndex = 1.f;
+	static constexpr float _glassIndex = 1.5f;
 	long long unsigned _nCalculations = 0;
 
 	std::pair<Triangle, unsigned> rayIntersection(Ray& arg);
-	float shadowRayContribution(const Vertex& point, const Direction& normal) const;
+	double shadowRayContribution(const Vertex& point, const Direction& normal) const;
 	bool objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const;
+	//TODO these can probably be static
 	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const;
-	Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, float n1, float n2) const;
+	Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const;
 
 	class RayTree
 	{
@@ -44,8 +48,17 @@ private:
 	private:
 		std::unique_ptr<Ray> _head;
 		Color _finalColor;
+		size_t _treeSize;
+
+		constexpr static size_t maxTreeSize = 512;
+		constexpr static double _transmissionContrib = 0.99;
+		double _reflectionContrib;
 		
-		Color traverseRayTree(double firstHitShadowContribution) const;
+		void constructRayTree(Scene& scene, unsigned firstHitSurfaceType, std::pair<Triangle, unsigned>& firstHit) const;
+		double findTotalShadow(Ray* input) const;
+		Color traverseRayTree(const Scene& scene, Ray* input) const;
+		void attachReflected(const Scene& scene, Triangle& hitTri, Ray* currentRay) const;
+		void attachRefracted(const Scene& scene, Triangle& hitTri, Ray* currentRay) const;
 	};
 };
 

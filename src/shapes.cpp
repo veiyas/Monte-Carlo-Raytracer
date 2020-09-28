@@ -46,7 +46,7 @@ Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position)
 
 }
 
-double EPSILON = 1e-6;
+double EPSILON = 1e-4;
 std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 {
 	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
@@ -78,7 +78,7 @@ std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 
 	//std::cout << rayEnd.x + rayDirectionNormalized.x*d << "\n";
 
-	if (d < 0) // Intersection located behind the object
+	if (d < EPSILON) // Intersection located behind the object
 		return std::make_pair(-1, Triangle());
 
 	return std::make_pair(d, Triangle(glm::vec4(intersection, 1.0), intersectionPointNormal, getColor()));

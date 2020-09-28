@@ -13,37 +13,52 @@ typedef glm::vec4 Vertex;
 typedef glm::vec3 Direction;
 typedef glm::vec<3, double> Color;
 
+class Triangle;
+
 class Ray
 {
 public:
-	//For easier accesses
-	friend class RayTree;
-
 	Ray(Vertex start, Vertex end);
 	Ray(Ray& ray);
+	Ray(Ray&& ray) = default;
 
 	static void initVertexList();
 
-	void setLeft(Ray& ray) { _left = std::make_unique<Ray>(ray); }
-	std::unique_ptr<Ray>& getLeft() { return _left; }
-	void setRight(Ray& ray) { _right = std::make_unique<Ray>(ray); }
-	std::unique_ptr<Ray>& getRight() { return _right; }
+	void setLeft(Ray&& ray) { _left = std::make_unique<Ray>(ray); }
+	Ray* getLeft() { return  _left ? _left.get() : nullptr; }
+	void setRight(Ray&& ray) { _right = std::make_unique<Ray>(ray); }
+	Ray* getRight() { return _right ? _right.get() : nullptr; }
+	void setParent(Ray* ray) { _parent = ray; }
+	Ray* getParent() { return _parent; }
 
 	Vertex getStart() const { return *_start; }
 	Vertex getEnd() const { return *_end; }
+
+	Triangle* getEndTriangle() const { return _endTriangle.get(); }
+	void setEndTriangle(Triangle& tri) { _endTriangle = std::make_unique<Triangle>(tri); }
+
+	void setInsideObject(bool isInside) { _isInsideObject = isInside; }
+	bool isInsideObject() const { return _isInsideObject; }
 	Color getColor() const { return _rayColor; }
 	void setColor(const Color color) { _rayColor = color; }
+
+	double getShadow() const { return _shadow; }
+	void setShadow(double shadow) { _shadow = shadow; }
 private:
+	std::unique_ptr<Vertex> _end;
+	std::unique_ptr<Vertex> _start;
 	static std::vector<Vertex> _imagePlaneVertices; //?????
+
+	bool _isInsideObject = false;
+	double _shadow;
 
 	//Left: reflected, Right: refracted
 	std::unique_ptr<Ray> _left;
 	std::unique_ptr<Ray> _right;
+	Ray* _parent = nullptr;
 
 	Color _rayColor;
-	std::unique_ptr<Vertex> _start;
-	std::unique_ptr<Vertex> _end;
-	std::unique_ptr<Vertex> _endTriangle;
+	std::unique_ptr<Triangle> _endTriangle;
 };
 
 class Pixel
