@@ -6,13 +6,12 @@ Tetrahedron::Tetrahedron(BRDF brdf, float radius, Color color, Vertex position)
 	_triangles.reserve(4);
 
 	const Vertex v[4] = {
-		radius * Vertex{  1.0f,  1.0f,  1.0f, 1.0f } +position,
-		radius * Vertex{ -1.0f, -1.0f,  1.0f, 1.0f } +position,
-		radius * Vertex{ -1.0f,  1.0f, -1.0f, 1.0f } +position,
-		radius * Vertex{  1.0f, -1.0f, -1.0f, 1.0f } +position
+		radius * Vertex{  1.0f,  1.0f,  1.0f, 1.0f } + position,
+		radius * Vertex{ -1.0f, -1.0f,  1.0f, 1.0f } + position,
+		radius * Vertex{ -1.0f,  1.0f, -1.0f, 1.0f } + position,
+		radius * Vertex{  1.0f, -1.0f, -1.0f, 1.0f } + position
 	};
 
-	// TODO Fix direction -- maybe do automatically in triangle
 	_triangles.emplace_back(v[2], v[1], v[0], color);
 	_triangles.emplace_back(v[0], v[3], v[2], color);
 	_triangles.emplace_back(v[1], v[3], v[0], color);

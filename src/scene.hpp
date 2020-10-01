@@ -51,10 +51,8 @@ private:
 		size_t _treeSize;
 
 		constexpr static size_t maxTreeSize = 512;
-		constexpr static double _transmissionContrib = 0.99;
-		double _reflectionContrib;
 		
-		void constructRayTree(Scene& scene, unsigned firstHitSurfaceType, std::pair<Triangle, unsigned>& firstHit) const;
+		void constructRayTree(Scene& scene) const;
 		double findTotalShadow(Ray* input) const;
 		Color traverseRayTree(const Scene& scene, Ray* input) const;
 		void attachReflected(const Scene& scene, Triangle& hitTri, Ray* currentRay) const;

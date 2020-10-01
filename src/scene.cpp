@@ -20,6 +20,24 @@ Scene::Scene()
 			Direction{ 0.f, 0.f, -1.f }, Color{ 0.96, 0.37, 0.27 });
 	}
 
+	//constexpr Color wallColors[] = {
+	//	Color{ 1.0, 1.0, 1.0 },
+	//	Color{ 0.0, 0.7, 0.0 },
+	//	Color{ 0.0, 0.0, 0.7 },
+	//	Color{ 0.5, 0.5, 0.0 },
+	//	Color{ 0.0, 0.5, 0.5 },
+	//	Color{ 0.5, 0.0, 0.5 },
+	//};
+
+	constexpr Color wallColors[] = {
+		Color{ 0.45, 0.58, 0.48 },
+		Color{ 0.45, 0.58, 0.48 },
+		Color{ 0.45, 0.58, 0.48 },
+		Color{ 0.45, 0.58, 0.48 },
+		Color{ 0.45, 0.58, 0.48 },
+		Color{ 0.45, 0.58, 0.48 }
+	};
+
 	//Wall triangles
 	size_t wallNormalCounter = 0;
 	for (size_t i = 0; i < wallVertices.size(); i += 3)
@@ -31,7 +49,7 @@ Scene::Scene()
 
 		_sceneTris.emplace_back(
 			wallVertices[i], wallVertices[i + 1], wallVertices[i + 2],
-			wallNormals[wallNormalCounter], Color{ 0.45, 0.58, 0.48 });
+			wallNormals[wallNormalCounter], wallColors[(i/3)/2]);
 
 	}
 
@@ -46,7 +64,7 @@ Scene::Scene()
 	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 7.f, -2.f, -1.f, 1.f });
 
 	//Lights
-	_pointLights.emplace_back(Vertex(0, 3, 4, 1), Color(1, 1, 1));
+	_pointLights.emplace_back(Vertex(1, -1, 1, 1), Color(1, 1, 1));
 }
 
 Color Scene::raycastScene(Ray& initialRay)
@@ -108,19 +126,21 @@ std::pair<Triangle, unsigned> Scene::rayIntersection(Ray& ray)
 			minT = intersect.first;
 		}
 	}
-	double shadow = 1.f;
-	if (closestIntersectSurfaceType != BRDF::TRANSPARENT)
-	{
-		shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
-		closestIntersectColor *= (shadow + _ambientContribution);
-	}
-	else
-		closestIntersectColor *= _ambientContribution;
+	//double shadow = 1.f;
+	//if (closestIntersectSurfaceType != BRDF::TRANSPARENT)
+	//{
+	//	shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
+	//	closestIntersectColor *= (shadow + _ambientContribution);
+	//}
+	//else
+	//	closestIntersectColor *= _ambientContribution;
 
+	// TODO Not sure returning a tri makes sense when it could just as well be a sphere
 	Triangle intersectedTri{ closestIntersectPoint, closestIntersectNormal, closestIntersectColor };
-	ray.setColor(closestIntersectColor);
-	ray.setShadow(shadow);
+	//ray.setColor(closestIntersectColor); // The color member is used for importance and should not be set like this
+	//ray.setShadow(shadow); // TODO What is this used for?
 	ray.setEndTriangle(intersectedTri);
+	ray.setIntersectPoint(closestIntersectPoint);
 	return std::make_pair(intersectedTri, closestIntersectSurfaceType);
 ;
 }
@@ -194,13 +214,13 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 	float n1, n2;
 	if (insideObject)
 	{
-		n1 = 1.2f;
+		n1 = 1.5f;
 		n2 = 1.f;
 	}
 	else
 	{
 		n1 = 1.f;
-		n2 = 1.2f;
+		n2 = 1.5f;
 	}
 	float n1n2 = n1 / n2;
 	float NI = glm::dot(normal, incomingDir);
@@ -218,40 +238,19 @@ Scene::RayTree::RayTree(Ray& initialRay)
 	_head = std::make_unique<Ray>(initialRay);
 	_head->setShadow(1.0);
 	_treeSize = 1;
-	_reflectionContrib = 1.0 - _transmissionContrib;
 }
 
 void Scene::RayTree::raytrace(Scene& scene)
 {
-	auto currentIntersection = scene.rayIntersection(*_head.get());
-
-	if (currentIntersection.second == BRDF::DIFFUSE) //Hit wall immidiately
-	{
-		_finalColor = _head->getEndTriangle()->getColor();
-	}
-	else
-	{
-		constructRayTree(scene, currentIntersection.second, currentIntersection);
-		_finalColor = traverseRayTree(scene, _head.get());
-	}
+	constructRayTree(scene);
+	_finalColor = traverseRayTree(scene, _head.get());
 }
 
-void Scene::RayTree::constructRayTree(Scene& scene, unsigned firstHitSurfaceType, std::pair<Triangle, unsigned>& firstHit) const
+void Scene::RayTree::constructRayTree(Scene& scene) const
 {
 	std::queue<Ray*> rays;
 	Ray* currentRay = _head.get();
-	if (firstHitSurfaceType == BRDF::REFLECTOR)
-	{
-		attachReflected(scene, firstHit.first, currentRay);
-		rays.push(currentRay->getLeft());
-	}
-	else if (firstHitSurfaceType == BRDF::TRANSPARENT)
-	{
-		attachReflected(scene, firstHit.first, currentRay);
-		attachRefracted(scene, firstHit.first, currentRay);
-		rays.push(currentRay->getLeft());
-		rays.push(currentRay->getRight());
-	}
+	rays.push(currentRay);
 
 	std::pair<Triangle, unsigned> currentIntersection{};	
 	size_t rayTreeCounter{ 0 };
@@ -264,32 +263,56 @@ void Scene::RayTree::constructRayTree(Scene& scene, unsigned firstHitSurfaceType
 		if (currentIntersection.second == BRDF::REFLECTOR)
 		{
 			attachReflected(scene, currentIntersection.first, currentRay);
+			currentRay->getLeft()->setColor(currentRay->getColor());
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
 		}
 		else if (currentIntersection.second == BRDF::TRANSPARENT)
 		{
-			attachReflected(scene, currentIntersection.first, currentRay);
-			rays.push(currentRay->getLeft());
-			++rayTreeCounter;
+			float incAngle = glm::angle(-currentRay->getNormalizedDirection(), currentIntersection.first.getNormal());
 
-			bool willRefract = false;
-			if (currentRay->isInsideObject())
+			// How much of the incoming importance/radiance is reflected, between 0 and 1.
+			// The rest of the importance/radiance is transmitted.
+			double reflectionCoeff;
+
+			float brewsterAngle = 0.0f; // In radians // TODO
+			if (currentRay->isInsideObject() && incAngle > brewsterAngle) // Total internal reflection
 			{
-				//Check brewster angle
-				Direction rayDir =
-					glm::vec3(glm::normalize(currentRay->getEnd() - currentRay->getStart()));
-				if (glm::angle(currentIntersection.first.getNormal(), rayDir) < 42.f)
-				{
-					willRefract = true;
-				}
+				reflectionCoeff = 1;
 			}
-			else if(!currentRay->isInsideObject() || willRefract)
+			else // Transmission occurs
 			{
+				double n1, n2;
+				if (currentRay->isInsideObject())
+					n1 = 1.5, n2 = 1; // TODO
+				else
+					n1 = 1, n2 = 1.5; // TODO
+
+				// Schlicks equation for radiance distribution
+				double R0 = pow((n1 - n2) / (n1 + n2), 2);
+				//if (R0 > 1) std::cout << R0 << '\n';
+				reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
+
 				attachRefracted(scene, currentIntersection.first, currentRay);
+
+				//if (reflectionCoeff > 1) std::cout << reflectionCoeff << '\n';
+
+				// TODO BRDF should be used in these calculations
+				currentRay->getRight()->setColor((1.0 - reflectionCoeff) * currentRay->getColor());
 				rays.push(currentRay->getRight());
 				++rayTreeCounter;
+
 			}
+
+			//if (abs((reflectionCoeff + (1 - reflectionCoeff)) - 1) > 0.001)
+			//	std::cout << reflectionCoeff << '\n';
+
+			// Always cast reflected ray
+			attachReflected(scene, currentIntersection.first, currentRay);
+			// TODO BRDF should be used in these calculations
+			currentRay->getLeft()->setColor(reflectionCoeff * currentRay->getColor());
+			rays.push(currentRay->getLeft());
+			++rayTreeCounter;
 		}
 	}
 }
@@ -314,17 +337,27 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 		Ray* left = current->getLeft();
 		Ray* right = current->getRight();
 
+		// TODO Local lighting model contibutions
+
 		if (left == nullptr && right == nullptr)
-			return  current->getEndTriangle()->getColor() * findTotalShadow(current);
+			//return current->getEndTriangle()->getColor() * findTotalShadow(current);
+			return current->getEndTriangle()->getColor()
+				* scene.shadowRayContribution(current->getIntersectionPoint(), current->getEndTriangle()->getNormal()); // TODO Remake with some better handling of tri/sphere
 		else if (left && right == nullptr)
 			current = current->getLeft();
 		else if (left == nullptr && right)
 			current = current->getRight();
 		else if (left && right)
 		{
-			Color leftSubTreeColor = traverseRayTree(scene, current->getLeft()) * _reflectionContrib;
-			Color rightSubTreeColor = traverseRayTree(scene, current->getRight()) * _transmissionContrib;
-			return leftSubTreeColor + rightSubTreeColor;
+			// FOR DEBUGGING
+			//Color colSum = current->getLeft()->getColor() + current->getRight()->getColor();
+			//if (colSum.r > 1.0 || colSum.g > 1.0 || colSum.b > 1.0)
+			//	std::cout << colSum.r << ' ' << colSum.g << ' ' << colSum.b << '\n';
+
+			Color leftSubContrib = traverseRayTree(scene, current->getLeft()) * current->getLeft()->getColor();
+			Color rightSubContrib = traverseRayTree(scene, current->getRight()) * current->getRight()->getColor();
+			//return (leftSubContrib + rightSubContrib) / current->getColor();
+			return (leftSubContrib + rightSubContrib);
 		}
 	}
 	return result;
@@ -347,7 +380,7 @@ void Scene::RayTree::attachRefracted(const Scene& scene, Triangle& hitTri, Ray* 
 		hitTri.getNormal(),
 		*currentRay,
 		hitTri.getPoint(), currentRay->isInsideObject());
-	refractedRay.setInsideObject(true);
+	refractedRay.setInsideObject(true); // TODO This is not right probably
 
 	currentRay->setRight(std::move(refractedRay));
 	currentRay->getRight()->setParent(currentRay);

@@ -14,6 +14,12 @@ Ray::Ray(Vertex start, Vertex end)
 	//_imagePlaneVertices.push_back(end);
 }
 
+Ray::Ray(Vertex start, Vertex end, Color color)
+	: Ray{ start, end }
+{
+	_rayColor = color;
+}
+
 Ray::Ray(Ray& ray)
 {
 	_left = std::move(ray._left);
@@ -28,6 +34,12 @@ Ray::Ray(Ray& ray)
 void Ray::initVertexList()
 {
 	_imagePlaneVertices.reserve(72);
+}
+
+Direction Ray::getNormalizedDirection() const
+{
+	// TODO Consider storing the direction as a member
+	return Direction{ glm::normalize(getEnd() - getStart()) };
 }
 
 Triangle::Triangle(Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color)

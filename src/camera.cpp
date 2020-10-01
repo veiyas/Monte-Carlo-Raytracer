@@ -66,7 +66,7 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 			1.0f
 		};
 
-		auto ray = std::make_shared<Ray>(_eyeToggle ? _eyePoint1 : _eyePoint2, pixelPoint);
+		auto ray = std::make_shared<Ray>(_eyeToggle ? _eyePoint1 : _eyePoint2, pixelPoint, Color{ 1.0, 1.0, 1.0 });
 
 		_pixels[row][col].addRay(ray);
 
