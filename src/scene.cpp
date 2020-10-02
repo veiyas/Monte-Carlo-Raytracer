@@ -1,4 +1,5 @@
 #include "scene.hpp"
+#include "ray.hpp"
 
 Scene::Scene()
 {

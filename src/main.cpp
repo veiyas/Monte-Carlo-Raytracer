@@ -3,6 +3,7 @@
 #include "basic_types.hpp"
 #include "scene.hpp"
 #include "camera.hpp"
+#include "ray.hpp"
 
 int main()
 {

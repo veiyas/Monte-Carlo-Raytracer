@@ -9,6 +9,7 @@
 
 #include "basic_types.hpp"
 #include "brdf.hpp"
+#include "triangle.hpp"
 
 class BasicProperties
 {

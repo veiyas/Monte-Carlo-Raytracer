@@ -5,6 +5,8 @@
 #include <chrono>
 #include <list>
 
+#include "ray.hpp"
+
 Camera::Camera(bool eyePoint) : _eyeToggle{ eyePoint }
 {
 	std::random_device rd;

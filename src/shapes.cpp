@@ -1,4 +1,5 @@
 #include "shapes.hpp"
+#include "ray.hpp"
 
 Tetrahedron::Tetrahedron(BRDF brdf, float radius, Color color, Vertex position)
 	: BasicProperties{ brdf, color }
