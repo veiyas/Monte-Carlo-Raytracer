@@ -9,7 +9,7 @@ Scene::Scene()
 	{
 		_sceneTris.emplace_back(
 			floorVertices[i], floorVertices[i + 1], floorVertices[i + 2],
-			Direction{ 0.f, 0.f, 1.f }, Color{ 0.84, 0.73, 0.45 });
+			Direction{ 0.f, 0.f, 1.f }, Color{ 0.2, 0.3, 0.97 });
 	}
 
 	//Ceiling triangles
@@ -29,13 +29,19 @@ Scene::Scene()
 	//	Color{ 0.5, 0.0, 0.5 },
 	//};
 
-	constexpr Color wallColors[] = {
-		Color{ 0.45, 0.58, 0.48 },
-		Color{ 0.45, 0.58, 0.48 },
-		Color{ 0.45, 0.58, 0.48 },
-		Color{ 0.45, 0.58, 0.48 },
-		Color{ 0.45, 0.58, 0.48 },
-		Color{ 0.45, 0.58, 0.48 }
+	//constexpr Color wallColors[] = {
+	//	Color{ 0.45, 0.58, 0.48 },
+	//	Color{ 0.45, 0.58, 0.48 },
+	//	Color{ 0.45, 0.58, 0.48 },
+	//	Color{ 0.45, 0.58, 0.48 },
+	//	Color{ 0.45, 0.58, 0.48 },
+	//	Color{ 0.45, 0.58, 0.48 }
+	//};
+
+	constexpr Color colooor = Color{ 1,1,1 };
+	constexpr Color wallColors[6] = {
+		colooor, colooor, colooor,
+		colooor, colooor, colooor
 	};
 
 	//Wall triangles
@@ -60,7 +66,8 @@ Scene::Scene()
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
-	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT}, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
+	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 2.f, 0.f, 0.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
 	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 7.f, -2.f, -1.f, 1.f });
 
 	//Lights
@@ -211,18 +218,7 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const
 {
 	Direction incomingDir = glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
-	float n1, n2;
-	if (insideObject)
-	{
-		n1 = 1.5f;
-		n2 = 1.f;
-	}
-	else
-	{
-		n1 = 1.f;
-		n2 = 1.5f;
-	}
-	float n1n2 = n1 / n2;
+	float n1n2 = insideObject ? _glassIndex / _airIndex : _airIndex / _glassIndex;
 	float NI = glm::dot(normal, incomingDir);
 	float sqrtExpression = 1 - ((glm::pow(n1n2, 2)) * (1 - glm::pow(NI, 2)));
 
@@ -258,6 +254,8 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 	{
 		currentRay = rays.front();
 		currentIntersection = scene.rayIntersection(*currentRay);
+			//if (currentRay->isInsideObject()) std::cout << (currentIntersection.second == BRDF::DIFFUSE) << "\n";
+			//if (currentRay->isInsideObject()) std::cout << currentIntersection.second << "\n";
 		rays.pop();
 
 		if (currentIntersection.second == BRDF::REFLECTOR)
@@ -269,43 +267,45 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 		}
 		else if (currentIntersection.second == BRDF::TRANSPARENT)
 		{
+			//std::cout << "uuuu\n";
 			float incAngle = glm::angle(-currentRay->getNormalizedDirection(), currentIntersection.first.getNormal());
 
 			// How much of the incoming importance/radiance is reflected, between 0 and 1.
 			// The rest of the importance/radiance is transmitted.
 			double reflectionCoeff;
 
-			float brewsterAngle = 0.0f; // In radians // TODO
+
+			double n1, n2;
+			if (currentRay->isInsideObject())
+				n1 = _glassIndex, n2 = _airIndex;
+			else
+				n1 = _airIndex, n2 = _glassIndex;
+
+			float brewsterAngle = asin(_airIndex/_glassIndex); // In radians // TODO Store this somewhere!
+
 			if (currentRay->isInsideObject() && incAngle > brewsterAngle) // Total internal reflection
 			{
+				//std::cout << "Total internal reflection\n";
 				reflectionCoeff = 1;
 			}
 			else // Transmission occurs
 			{
-				double n1, n2;
-				if (currentRay->isInsideObject())
-					n1 = 1.5, n2 = 1; // TODO
-				else
-					n1 = 1, n2 = 1.5; // TODO
 
 				// Schlicks equation for radiance distribution
 				double R0 = pow((n1 - n2) / (n1 + n2), 2);
-				//if (R0 > 1) std::cout << R0 << '\n';
 				reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
 
 				attachRefracted(scene, currentIntersection.first, currentRay);
 
-				//if (reflectionCoeff > 1) std::cout << reflectionCoeff << '\n';
+				//if (currentRay->isInsideObject()) std::cout << "Transmission from inside object" << '\n';
 
 				// TODO BRDF should be used in these calculations
 				currentRay->getRight()->setColor((1.0 - reflectionCoeff) * currentRay->getColor());
+				//if (currentRay->getRight()->isInsideObject()) std::cout << "jasa\n";
 				rays.push(currentRay->getRight());
 				++rayTreeCounter;
 
 			}
-
-			//if (abs((reflectionCoeff + (1 - reflectionCoeff)) - 1) > 0.001)
-			//	std::cout << reflectionCoeff << '\n';
 
 			// Always cast reflected ray
 			attachReflected(scene, currentIntersection.first, currentRay);
@@ -340,20 +340,23 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 		// TODO Local lighting model contibutions
 
 		if (left == nullptr && right == nullptr)
-			//return current->getEndTriangle()->getColor() * findTotalShadow(current);
+		{
+			// TODO This probably shouldnt be needed at all,
+			// try to find the source of the error
+			if (!current->getEndTriangle())
+				return Color{};
+
+			// TODO Remake with some better handling of tri/sphere
 			return current->getEndTriangle()->getColor()
-				* scene.shadowRayContribution(current->getIntersectionPoint(), current->getEndTriangle()->getNormal()); // TODO Remake with some better handling of tri/sphere
+				* scene.shadowRayContribution(current->getIntersectionPoint(),
+					                          current->getEndTriangle()->getNormal());
+		}
 		else if (left && right == nullptr)
 			current = current->getLeft();
 		else if (left == nullptr && right)
 			current = current->getRight();
 		else if (left && right)
 		{
-			// FOR DEBUGGING
-			//Color colSum = current->getLeft()->getColor() + current->getRight()->getColor();
-			//if (colSum.r > 1.0 || colSum.g > 1.0 || colSum.b > 1.0)
-			//	std::cout << colSum.r << ' ' << colSum.g << ' ' << colSum.b << '\n';
-
 			Color leftSubContrib = traverseRayTree(scene, current->getLeft()) * current->getLeft()->getColor();
 			Color rightSubContrib = traverseRayTree(scene, current->getRight()) * current->getRight()->getColor();
 			//return (leftSubContrib + rightSubContrib) / current->getColor();
@@ -370,6 +373,9 @@ void Scene::RayTree::attachReflected(const Scene& scene, Triangle& hitTri, Ray* 
 		*currentRay,
 		hitTri.getPoint());
 
+	// Reflected ray will always continue in the same medium
+	reflectedRay.setInsideObject(currentRay->isInsideObject());
+
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);
 }
@@ -380,7 +386,9 @@ void Scene::RayTree::attachRefracted(const Scene& scene, Triangle& hitTri, Ray* 
 		hitTri.getNormal(),
 		*currentRay,
 		hitTri.getPoint(), currentRay->isInsideObject());
-	refractedRay.setInsideObject(true); // TODO This is not right probably
+
+	// If refracting the medium changes
+	refractedRay.setInsideObject(!currentRay->isInsideObject());
 
 	currentRay->setRight(std::move(refractedRay));
 	currentRay->getRight()->setParent(currentRay);

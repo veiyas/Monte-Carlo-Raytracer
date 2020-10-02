@@ -22,6 +22,7 @@ Ray::Ray(Vertex start, Vertex end, Color color)
 
 Ray::Ray(Ray& ray)
 {
+	// TODO Using std::move when making a copy probably isnt right
 	_left = std::move(ray._left);
 	_right = std::move(ray._right);
 	_start = std::move(ray._start);
@@ -29,6 +30,7 @@ Ray::Ray(Ray& ray)
 	_endTriangle = std::move(ray._endTriangle);
 
 	_rayColor = ray._rayColor;
+	_isInsideObject = ray._isInsideObject;
 }
 
 void Ray::initVertexList()

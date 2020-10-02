@@ -59,21 +59,37 @@ std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 	double c = glm::dot(o_c, o_c) - _radius * _radius;
 	double d{};
 
+	bool isInside = false;
+
 	rayDirectionNormalized /= 2; //Reset to normalized vector
 	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
 
-	if (expressionInSQRT < -EPSILON) //No intersection
+	if (expressionInSQRT < -EPSILON) //No intersections
 		return std::make_pair(-1, Triangle());
 	else if (expressionInSQRT > -EPSILON && expressionInSQRT < EPSILON) //One intersection
 		d = (-b) / 2;
-	else
+	else // Two intersections
+	{
+		// Pick the intersection that is closest to the starting point of the ray, while givning a positive d
 		d = ((-b) / 2) - glm::sqrt(expressionInSQRT);
+
+		float otherPossibleD = ((-b) / 2) + glm::sqrt(expressionInSQRT);
+		if (d < EPSILON && otherPossibleD > EPSILON) // The intersecting ray is coming from inside the object
+		{
+			d = otherPossibleD;
+			isInside = true;
+		}
+	}
 
 	glm::vec3 intersection = rayStart + rayDirectionNormalized.operator*=(d);
 	glm::vec3 intersectionPointNormal = glm::normalize(glm::vec3{
 		intersection.x - _position.x,
 		intersection.y - _position.y,
 		intersection.z - _position.z });
+
+	// Flip normal if intersecting from inside object
+	if (isInside)
+		intersectionPointNormal *= -1.0f;
 
 	//std::cout << rayEnd.x + rayDirectionNormalized.x*d << "\n";
 
