@@ -153,7 +153,7 @@ double Scene::shadowRayContribution(const Vertex& point, const Direction& normal
 	for (const auto& light : _pointLights)
 	{
 		bool visible = true;
-		Direction shadowRayVec = glm::normalize(light.getPosition() - point);
+		Direction shadowRayVec = glm::normalize(glm::vec3(light.getPosition()) - glm::vec3(point));
 		float normalDotContribution = glm::dot(shadowRayVec, normal);
 
 		if (normalDotContribution <= 0) //Angle between normal and lightvec >= 90 deg
@@ -226,7 +226,6 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 Scene::RayTree::RayTree(Ray& initialRay)
 {
 	_head = std::make_unique<Ray>(initialRay);
-	//_head->setShadow(1.0);
 	_treeSize = 1;
 }
 
@@ -251,7 +250,7 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 		bool intersected = scene.rayIntersection(*currentRay);
 		if (!intersected)
 		{
-			//std::cout << "A ray with no intersections detected\n";
+			std::cout << "A ray with no intersections detected\n";
 			continue; // I think this is right...
 		}
 

@@ -52,5 +52,5 @@ float Triangle::rayIntersection(Ray& arg) const
 	bool pointIsOnTriangle = (u >= 0) && (v >= 0) && (u + v <= 1);
 
 	// Return t for the intersection or -1 if no intersection is found
-	return (pointIsOnTriangle && t > 0) ? t : -1;
+	return (pointIsOnTriangle && t > 0) ? t * glm::length(D) : -1;
 }

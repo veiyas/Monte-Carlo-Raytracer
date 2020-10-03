@@ -35,7 +35,7 @@ std::optional<IntersectionData> Tetrahedron::rayIntersection(Ray& ray) const
 
 	if (closestIntersectingTriangle != nullptr)
 		return IntersectionData{
-			ray.getStart() + Vertex{ ray.getNormalizedDirection() * minT, 1.0f },
+			ray.getStart() + Vertex{ ray.getNormalizedDirection() * minT, 0.0f },
 			closestIntersectingTriangle->getNormal(),
 			minT };
 	else
@@ -59,13 +59,12 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 	glm::vec3 o_c = rayStart - glm::vec3{ _position.x, _position.y, _position.z };
 
 	double a = glm::dot(rayDirectionNormalized, rayDirectionNormalized);
-	double b = glm::dot(o_c, rayDirectionNormalized.operator*=(2));
+	double b = glm::dot(o_c, rayDirectionNormalized * 2.0f);
 	double c = glm::dot(o_c, o_c) - _radius * _radius;
 	double d{};
 
 	bool isInside = false;
 
-	rayDirectionNormalized /= 2; //Reset to normalized vector
 	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
 
 	if (expressionInSQRT < -EPSILON) //No intersections
@@ -101,7 +100,7 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 		return {};
 
 	return IntersectionData{
-		arg.getStart() + Vertex{ arg.getNormalizedDirection() * (float)d, 1.0f },
+		arg.getStart() + Vertex{ arg.getNormalizedDirection() * (float)d, 0.0f },
 		intersectionPointNormal,
 		(float)d
 	};
@@ -123,7 +122,7 @@ std::optional<IntersectionData> TriangleObj::rayIntersection(Ray& arg) const
 		return {};
 
 	return IntersectionData{
-		arg.getStart() + Vertex{ arg.getNormalizedDirection() * t, 1.0f },
+		arg.getStart() + Vertex{ arg.getNormalizedDirection() * t, 0.0f },
 		_basicTriangle.getNormal(),
 		t
 	};
