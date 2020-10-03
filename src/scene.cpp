@@ -15,7 +15,7 @@ Scene::Scene()
 			BRDF::DIFFUSE,
 			floorVertices[i], floorVertices[i + 1], floorVertices[i + 2],
 			Direction{ 0.f, 0.f, 1.f },
-			Color{ 0.2, 0.3, 0.97 });
+			Color{ 0.2, 0.2, 1.0 });
 	}
 
 	//Ceiling triangles
@@ -25,9 +25,10 @@ Scene::Scene()
 			BRDF::DIFFUSE,
 			ceilingVertices[i], ceilingVertices[i + 1], ceilingVertices[i + 2],
 			Direction{ 0.f, 0.f, -1.f },
-			Color{ 0.96, 0.37, 0.27 });
+			Color{ 1.0, 0.27, 0.27 });
 	}
 
+	//// Clown room :))
 	//constexpr Color wallColors[] = {
 	//	Color{ 1.0, 1.0, 1.0 },
 	//	Color{ 0.0, 0.7, 0.0 },
@@ -35,15 +36,6 @@ Scene::Scene()
 	//	Color{ 0.5, 0.5, 0.0 },
 	//	Color{ 0.0, 0.5, 0.5 },
 	//	Color{ 0.5, 0.0, 0.5 },
-	//};
-
-	//constexpr Color wallColors[] = {
-	//	Color{ 0.45, 0.58, 0.48 },
-	//	Color{ 0.45, 0.58, 0.48 },
-	//	Color{ 0.45, 0.58, 0.48 },
-	//	Color{ 0.45, 0.58, 0.48 },
-	//	Color{ 0.45, 0.58, 0.48 },
-	//	Color{ 0.45, 0.58, 0.48 }
 	//};
 
 	constexpr Color colooor = Color{ 1,1,1 };
@@ -71,19 +63,25 @@ Scene::Scene()
 
 	// Tetrahedrons
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 5.0f, 0.0f, 0.f, 1.0f });
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
-	_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 5.0f, -2.0f, -2.0f, 1.0f });
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 0.8f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 3.0f, 0.0f, -1.0f, 1.0f });
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 5.0f, -2.0f, -2.0f, 1.0f });
 	// Intersecting the walls
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
 	//_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 6.f, 1.f, 0.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 7.f, -2.f, -1.f, 1.f });
+	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
+	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 4.5f, -0.9f, 1.2f, 1.f });
 
 	//Lights
-	_pointLights.emplace_back(Vertex(1, -1, 1, 1), Color(1, 1, 1));
+	//_pointLights.emplace_back(Vertex(1, -1, 1, 1), Color(1, 1, 1));
 	//_pointLights.emplace_back(Vertex(1, 0, 0, 1), Color(1, 1, 1)); // Centered
+
+	//// Algots scene
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
+	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 4.5f, -0.9f, 1.2f, 1.f });
+	_pointLights.emplace_back(Vertex(1, -1, 1, 1), Color(1, 1, 1));
 }
 
 Color Scene::raycastScene(Ray& initialRay)
@@ -219,6 +217,9 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 	Direction refractDir = n1n2 * incomingDir + normal * (-n1n2 * NI
 		- glm::sqrt(sqrtExpression)
 	);
+
+	//// TODO Test this and decide
+	//refractDir = glm::refract(incomingRay.getNormalizedDirection(), normal, n1n2);
 
 	return Ray{ intersectionPoint, Vertex{ glm::vec3{ intersectionPoint } + refractDir, 1.0f } };
 }
@@ -364,6 +365,7 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 		{
 			Color leftSubContrib = traverseRayTree(scene, current->getLeft()) * current->getLeft()->getColor();
 			Color rightSubContrib = traverseRayTree(scene, current->getRight()) * current->getRight()->getColor();
+
 			//return (leftSubContrib + rightSubContrib) / current->getColor();
 			return (leftSubContrib + rightSubContrib);
 		}

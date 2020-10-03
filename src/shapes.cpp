@@ -1,17 +1,23 @@
 #include "shapes.hpp"
+
+#include <glm/gtx/rotate_vector.hpp>
+
 #include "ray.hpp"
+
 
 Tetrahedron::Tetrahedron(BRDF brdf, float radius, Color color, Vertex position)
 	: SceneObject{ brdf, color }
 {
 	_triangles.reserve(4);
 
-	const Vertex v[4] = {
-		radius * Vertex{  1.0f,  1.0f,  1.0f, 1.0f } + position,
-		radius * Vertex{ -1.0f, -1.0f,  1.0f, 1.0f } + position,
-		radius * Vertex{ -1.0f,  1.0f, -1.0f, 1.0f } + position,
-		radius * Vertex{  1.0f, -1.0f, -1.0f, 1.0f } + position
+	// Yes its ugly hehe
+	const Vertex v[4] = {                            // zeros to keep w=0 v
+		radius * glm::rotateX(glm::rotateZ(Vertex{  1.0f,  1.0f,  1.0f, 0.0f }, 1.0f), 1.0f) + position,
+		radius * glm::rotateX(glm::rotateZ(Vertex{ -1.0f, -1.0f,  1.0f, 0.0f }, 1.0f), 1.0f) + position,
+		radius * glm::rotateX(glm::rotateZ(Vertex{ -1.0f,  1.0f, -1.0f, 0.0f }, 1.0f), 1.0f) + position,
+		radius * glm::rotateX(glm::rotateZ(Vertex{  1.0f, -1.0f, -1.0f, 0.0f }, 1.0f), 1.0f) + position
 	};
+
 
 	_triangles.emplace_back(v[2], v[1], v[0], color);
 	_triangles.emplace_back(v[0], v[3], v[2], color);
@@ -34,12 +40,22 @@ std::optional<IntersectionData> Tetrahedron::rayIntersection(Ray& ray) const
 	}
 
 	if (closestIntersectingTriangle != nullptr)
+	{
+		Direction intersectNormal = closestIntersectingTriangle->getNormal();
+		// If intersected from inside, the normal is flipped
+		if (glm::dot(ray.getNormalizedDirection(), intersectNormal) > 0)
+		{
+			intersectNormal *= -1.0f;
+		}
+
 		return IntersectionData{
 			ray.getStart() + Vertex{ ray.getNormalizedDirection() * minT, 0.0f },
-			closestIntersectingTriangle->getNormal(),
-			minT };
-	else
-		return {};
+			intersectNormal,
+			minT
+		};
+	}
+
+	return {};
 }
 
 Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position)
