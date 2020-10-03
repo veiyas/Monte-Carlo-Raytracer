@@ -1,4 +1,7 @@
 #include "scene.hpp"
+
+#include <glm/gtx/string_cast.hpp>
+
 #include "ray.hpp"
 
 Scene::Scene()
@@ -9,16 +12,20 @@ Scene::Scene()
 	for (size_t i = 0; i < floorVertices.size(); i += 3)
 	{
 		_sceneTris.emplace_back(
+			BRDF::DIFFUSE,
 			floorVertices[i], floorVertices[i + 1], floorVertices[i + 2],
-			Direction{ 0.f, 0.f, 1.f }, Color{ 0.2, 0.3, 0.97 });
+			Direction{ 0.f, 0.f, 1.f },
+			Color{ 0.2, 0.3, 0.97 });
 	}
 
 	//Ceiling triangles
 	for (size_t i = 0; i < ceilingVertices.size(); i += 3)
 	{
 		_sceneTris.emplace_back(
+			BRDF::DIFFUSE,
 			ceilingVertices[i], ceilingVertices[i + 1], ceilingVertices[i + 2],
-			Direction{ 0.f, 0.f, -1.f }, Color{ 0.96, 0.37, 0.27 });
+			Direction{ 0.f, 0.f, -1.f },
+			Color{ 0.96, 0.37, 0.27 });
 	}
 
 	//constexpr Color wallColors[] = {
@@ -55,24 +62,28 @@ Scene::Scene()
 			wallNormalCounter++;
 
 		_sceneTris.emplace_back(
+			BRDF::DIFFUSE,
 			wallVertices[i], wallVertices[i + 1], wallVertices[i + 2],
-			wallNormals[wallNormalCounter], wallColors[(i/3)/2]);
+			wallNormals[wallNormalCounter],
+			wallColors[(i/3)/2]);
 
 	}
 
 	// Tetrahedrons
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 5.0f, 0.0f, 0.f, 1.0f });
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 6.0f, -3.0f, -1.0f, 1.0f });
+	_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 5.0f, -2.0f, -2.0f, 1.0f });
 	// Intersecting the walls
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
 
 	//Spheres
-	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 2.f, 0.f, 0.f, 1.f });
+	//_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 6.f, 1.f, 0.f, 1.f });
 	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 7.f, -2.f, -1.f, 1.f });
+	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 7.f, -2.f, -1.f, 1.f });
 
 	//Lights
 	_pointLights.emplace_back(Vertex(1, -1, 1, 1), Color(1, 1, 1));
+	//_pointLights.emplace_back(Vertex(1, 0, 0, 1), Color(1, 1, 1)); // Centered
 }
 
 Color Scene::raycastScene(Ray& initialRay)
@@ -82,75 +93,57 @@ Color Scene::raycastScene(Ray& initialRay)
 	return tree.getPixelColor();
 }
 
-std::pair<Triangle, unsigned> Scene::rayIntersection(Ray& ray)
+bool Scene::rayIntersection(Ray& ray)
 {
-	Vertex closestIntersectPoint{};
-	Direction closestIntersectNormal{};
-	Color closestIntersectColor{};
-	unsigned closestIntersectSurfaceType = BRDF::DIFFUSE;
+	std::optional<IntersectionData> closestIntersectData{};
+	SceneObject* closestIntersectObject{};
 	float minT = 1e+10;
 
 	//TODO put these in single loop
 	for (auto& triangle : _sceneTris)
 	{
-		float t = triangle.rayIntersection(ray);
+		auto temp = triangle.rayIntersection(ray);
 		++_nCalculations;
-		if (t != -1 && t < minT)
+		// Did intersection occur, and is it closer than minT?
+		if (temp.has_value() && temp.value()._t < minT)
 		{
-			closestIntersectPoint =
-				ray.getStart() + glm::normalize((ray.getEnd() - ray.getStart())) * t;
-			closestIntersectNormal = triangle.getNormal();
-			closestIntersectColor = triangle.getColor();
-			minT = t;
+			closestIntersectData = temp;
+			closestIntersectObject = &triangle;
+			minT = temp.value()._t;
 		}
 	}
 
 	for (auto& tetrahedron : _tetrahedrons)
 	{
-		auto intersect = tetrahedron.rayIntersection(ray);
+		auto temp = tetrahedron.rayIntersection(ray);
 		++_nCalculations;
-		if (intersect.first != -1 && intersect.first < minT)
+		if (temp.has_value() && temp.value()._t < minT)
 		{
-			closestIntersectPoint =
-				ray.getStart() + glm::normalize((ray.getEnd() - ray.getStart())) * intersect.first;
-			closestIntersectNormal = intersect.second.getNormal();
-			closestIntersectColor = intersect.second.getColor();
-			closestIntersectSurfaceType = tetrahedron.getBRDF().getSurfaceType();
-			minT = intersect.first;
+			closestIntersectData = temp;
+			closestIntersectObject = &tetrahedron;
+			minT = temp.value()._t;
 		}
 	}
 
 	for (auto& sphere : _spheres)
 	{
-		auto intersect = sphere.rayIntersection(ray);
+		auto temp = sphere.rayIntersection(ray);
 		++_nCalculations;
-		if (intersect.first != -1 && intersect.first < minT)
+		if (temp.has_value() && temp.value()._t < minT)
 		{
-			closestIntersectPoint =
-				ray.getStart() + glm::normalize((ray.getEnd() - ray.getStart())) * intersect.first;
-			closestIntersectNormal = intersect.second.getNormal();
-			closestIntersectColor = intersect.second.getColor();
-			closestIntersectSurfaceType = sphere.getBRDF().getSurfaceType();
-			minT = intersect.first;
+			closestIntersectData = temp;
+			closestIntersectObject = &sphere;
+			minT = temp.value()._t;
 		}
 	}
-	//double shadow = 1.f;
-	//if (closestIntersectSurfaceType != BRDF::TRANSPARENT)
-	//{
-	//	shadow = shadowRayContribution(closestIntersectPoint, closestIntersectNormal);
-	//	closestIntersectColor *= (shadow + _ambientContribution);
-	//}
-	//else
-	//	closestIntersectColor *= _ambientContribution;
 
-	// TODO Not sure returning a tri makes sense when it could just as well be a sphere
-	Triangle intersectedTri{ closestIntersectPoint, closestIntersectNormal, closestIntersectColor };
-	//ray.setColor(closestIntersectColor); // The color member is used for importance and should not be set like this
-	//ray.setShadow(shadow); // TODO What is this used for?
-	ray.setEndTriangle(intersectedTri);
-	ray.setIntersectPoint(closestIntersectPoint);
-	return std::make_pair(intersectedTri, closestIntersectSurfaceType);
-;
+	if (closestIntersectData.has_value())
+	{
+		ray.setIntersectedObject(closestIntersectObject);
+		ray.setIntersectionData(closestIntersectData.value());
+		return true;
+	}
+	return false;
 }
 
 double Scene::shadowRayContribution(const Vertex& point, const Direction& normal) const
@@ -187,16 +180,17 @@ double Scene::shadowRayContribution(const Vertex& point, const Direction& normal
 				}
 			}			
 		}
-		lightContribution += normalDotContribution * visible;
+		lightContribution += normalDotContribution; // *visible; TODO
 	}
 	return lightContribution;
 }
 
-bool Scene::objectIsVisible(const std::pair<float, Triangle>& input, const Direction& normal) const
+bool Scene::objectIsVisible(const std::optional<IntersectionData>& input, const Direction& normal) const
 {
-	if (input.first != -1 // Intersection must exist
-		&& input.first < 1 // Intersections with t > 1 are behind the light
-		&& normal != input.second.getNormal())
+	if (input.has_value() // Intersection must exist
+		//&& input.first < 1 // Intersections with t > 1 are behind the light
+		// TODO Check for transparency
+		&& normal != input.value()._normal)
 		return false;
 	else
 		return true;
@@ -204,8 +198,7 @@ bool Scene::objectIsVisible(const std::pair<float, Triangle>& input, const Direc
 
 Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const
 {
-	Direction incomingRayDirection =
-		glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
+	Direction incomingRayDirection = incomingRay.getNormalizedDirection();
 	//Angle between normal and incoming ray
 	float angle = glm::angle(normal, incomingRayDirection);
 
@@ -213,12 +206,12 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 		incomingRayDirection - 2.f * (glm::dot(incomingRayDirection, normal)) * normal;
 
 	return Ray{ Vertex{ intersectionPoint },
-	            Vertex{ glm::vec3(intersectionPoint) + reflectedDirection, 1.f } };
+	            Vertex{ Direction(intersectionPoint) + reflectedDirection, 1.f } };
 }
 
 Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const
 {
-	Direction incomingDir = glm::normalize(incomingRay.getEnd() - incomingRay.getStart());
+	Direction incomingDir = incomingRay.getNormalizedDirection();
 	float n1n2 = insideObject ? _glassIndex / _airIndex : _airIndex / _glassIndex;
 	float NI = glm::dot(normal, incomingDir);
 	float sqrtExpression = 1 - ((glm::pow(n1n2, 2)) * (1 - glm::pow(NI, 2)));
@@ -233,7 +226,7 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 Scene::RayTree::RayTree(Ray& initialRay)
 {
 	_head = std::make_unique<Ray>(initialRay);
-	_head->setShadow(1.0);
+	//_head->setShadow(1.0);
 	_treeSize = 1;
 }
 
@@ -249,27 +242,35 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 	Ray* currentRay = _head.get();
 	rays.push(currentRay);
 
-	std::pair<Triangle, unsigned> currentIntersection{};	
 	size_t rayTreeCounter{ 0 };
 	while (!rays.empty() && rayTreeCounter < maxTreeSize)
 	{
 		currentRay = rays.front();
-		currentIntersection = scene.rayIntersection(*currentRay);
-			//if (currentRay->isInsideObject()) std::cout << (currentIntersection.second == BRDF::DIFFUSE) << "\n";
-			//if (currentRay->isInsideObject()) std::cout << currentIntersection.second << "\n";
 		rays.pop();
-
-		if (currentIntersection.second == BRDF::REFLECTOR)
+		// The rayIntersection method adds intersection info to ray
+		bool intersected = scene.rayIntersection(*currentRay);
+		if (!intersected)
 		{
-			attachReflected(scene, currentIntersection.first, currentRay);
+			//std::cout << "A ray with no intersections detected\n";
+			continue; // I think this is right...
+		}
+
+		auto& currentIntersection = currentRay->getIntersectionData().value();
+		auto& currentIntersectObject = currentRay->getIntersectedObject().value();
+
+
+		if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::REFLECTOR)
+		{
+			attachReflected(scene, currentIntersection, currentRay);
+			// All importance is reflected
 			currentRay->getLeft()->setColor(currentRay->getColor());
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
 		}
-		else if (currentIntersection.second == BRDF::TRANSPARENT)
+		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::TRANSPARENT)
 		{
 			//std::cout << "uuuu\n";
-			float incAngle = glm::angle(-currentRay->getNormalizedDirection(), currentIntersection.first.getNormal());
+			float incAngle = glm::angle(-currentRay->getNormalizedDirection(), currentIntersection._normal);
 
 			// How much of the incoming importance/radiance is reflected, between 0 and 1.
 			// The rest of the importance/radiance is transmitted.
@@ -296,9 +297,9 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 				double R0 = pow((n1 - n2) / (n1 + n2), 2);
 				reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
 
-				attachRefracted(scene, currentIntersection.first, currentRay);
+				attachRefracted(scene, currentIntersection, currentRay);
 
-				//if (currentRay->isInsideObject()) std::cout << "Transmission from inside object" << '\n';
+				//if (currentRay->isInsideObject()) std::cout << "Transmission from inside object\n";
 
 				// TODO BRDF should be used in these calculations
 				currentRay->getRight()->setColor((1.0 - reflectionCoeff) * currentRay->getColor());
@@ -309,7 +310,7 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 			}
 
 			// Always cast reflected ray
-			attachReflected(scene, currentIntersection.first, currentRay);
+			attachReflected(scene, currentIntersection, currentRay);
 			// TODO BRDF should be used in these calculations
 			currentRay->getLeft()->setColor(reflectionCoeff * currentRay->getColor());
 			rays.push(currentRay->getLeft());
@@ -318,15 +319,15 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 	}
 }
 
-double Scene::RayTree::findTotalShadow(Ray* input) const
-{
-	Ray* current = input;
-	while (current->getParent())
-	{
-		current = current->getParent();
-	}
-	return current->getShadow();
-}
+//double Scene::RayTree::findTotalShadow(Ray* input) const
+//{
+//	Ray* current = input;
+//	while (current->getParent())
+//	{
+//		current = current->getParent();
+//	}
+//	return current->getShadow();
+//}
 
 Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 {
@@ -342,15 +343,19 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 
 		if (left == nullptr && right == nullptr)
 		{
-			// TODO This probably shouldnt be needed at all,
-			// try to find the source of the error
-			if (!current->getEndTriangle())
+			// TODO Ideally the ray should always intersect something
+			if (current->getIntersectionData().has_value())
+			{
+				auto& intersectData = current->getIntersectionData().value();
+				return current->getIntersectedObject().value()->getColor()
+					* scene.shadowRayContribution(intersectData._intersectPoint,
+												  intersectData._normal);
+			}
+			else
+			{
 				return Color{};
+			}
 
-			// TODO Remake with some better handling of tri/sphere
-			return current->getEndTriangle()->getColor()
-				* scene.shadowRayContribution(current->getIntersectionPoint(),
-					                          current->getEndTriangle()->getNormal());
 		}
 		else if (left && right == nullptr)
 			current = current->getLeft();
@@ -367,26 +372,29 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 	return result;
 }
 
-void Scene::RayTree::attachReflected(const Scene& scene, Triangle& hitTri, Ray* currentRay) const
+void Scene::RayTree::attachReflected(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const
 {
 	Ray reflectedRay = scene.computeReflectedRay(
-		hitTri.getNormal(),
+		intData._normal,
 		*currentRay,
-		hitTri.getPoint());
+		intData._intersectPoint);
 
 	// Reflected ray will always continue in the same medium
 	reflectedRay.setInsideObject(currentRay->isInsideObject());
+
+	//std::cout << std::string{ glm::to_string(reflectedRay.getStart()) + glm::to_string(reflectedRay.getEnd()) + '\n' };
 
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);
 }
 
-void Scene::RayTree::attachRefracted(const Scene& scene, Triangle& hitTri, Ray* currentRay) const
+void Scene::RayTree::attachRefracted(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const
 {
 	Ray refractedRay = scene.computeRefractedRay(
-		hitTri.getNormal(),
+		intData._normal,
 		*currentRay,
-		hitTri.getPoint(), currentRay->isInsideObject());
+		intData._intersectPoint,
+		currentRay->isInsideObject());
 
 	// If refracting the medium changes
 	refractedRay.setInsideObject(!currentRay->isInsideObject());

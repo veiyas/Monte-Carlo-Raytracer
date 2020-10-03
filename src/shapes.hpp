@@ -11,10 +11,12 @@
 #include "brdf.hpp"
 #include "triangle.hpp"
 
-class BasicProperties
+
+
+class SceneObject
 {
 public:
-	BasicProperties(BRDF brdf, Color color)
+	SceneObject(BRDF brdf, Color color)
 		: _brdf{ std::move(brdf) }, _color{ color } {}
 
 	const BRDF& getBRDF() const { return _brdf; }
@@ -25,22 +27,34 @@ private:
 };
 
 
-class Tetrahedron : public BasicProperties
+class Tetrahedron : public SceneObject
 {
 public:
 	Tetrahedron(BRDF brdf, float radius, Color color, Vertex position);
-	std::pair<float, Triangle> rayIntersection(Ray& arg) const;
+	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
 private:
 	std::vector<Triangle> _triangles;
 };
 
-class Sphere : public BasicProperties
+class Sphere : public SceneObject
 {
 public:
 	Sphere(BRDF brdf, float radius, Color color, Vertex position);
 	
-	std::pair<float, Triangle> rayIntersection(Ray& arg) const;
+	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
 private:
 	const Vertex _position;
 	const float _radius;
+};
+
+// This way triangles can be treated the same way as spheres
+// and tetrahedrons, and they also have the basic properties
+class TriangleObj : public SceneObject
+{
+public:
+	TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Color color);
+	TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
+	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
+private:
+	const Triangle _basicTriangle;
 };

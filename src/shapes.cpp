@@ -2,7 +2,7 @@
 #include "ray.hpp"
 
 Tetrahedron::Tetrahedron(BRDF brdf, float radius, Color color, Vertex position)
-	: BasicProperties{ brdf, color }
+	: SceneObject{ brdf, color }
 {
 	_triangles.reserve(4);
 
@@ -19,7 +19,7 @@ Tetrahedron::Tetrahedron(BRDF brdf, float radius, Color color, Vertex position)
 	_triangles.emplace_back(v[2], v[3], v[1], color);
 }
 
-std::pair<float, Triangle> Tetrahedron::rayIntersection(Ray& ray) const
+std::optional<IntersectionData> Tetrahedron::rayIntersection(Ray& ray) const
 {
 	const Triangle* closestIntersectingTriangle = nullptr;
 	float minT = 1e+10;
@@ -34,20 +34,23 @@ std::pair<float, Triangle> Tetrahedron::rayIntersection(Ray& ray) const
 	}
 
 	if (closestIntersectingTriangle != nullptr)
-		return std::make_pair(minT, *closestIntersectingTriangle);
+		return IntersectionData{
+			ray.getStart() + Vertex{ ray.getNormalizedDirection() * minT, 1.0f },
+			closestIntersectingTriangle->getNormal(),
+			minT };
 	else
-		return std::make_pair(-1, Triangle{});
+		return {};
 }
 
 Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position)
-	: BasicProperties{ brdf, color },
+	: SceneObject{ brdf, color },
 	_radius { radius }, _position{ position }
 {
 
 }
 
-double EPSILON = 1e-4;
-std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
+static constexpr double EPSILON = 1e-4;
+std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 {
 	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
 	glm::vec3 rayEnd{ arg.getEnd().x, arg.getEnd().y, arg.getEnd().z };
@@ -66,19 +69,19 @@ std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
 
 	if (expressionInSQRT < -EPSILON) //No intersections
-		return std::make_pair(-1, Triangle());
+		return {};
 	else if (expressionInSQRT > -EPSILON && expressionInSQRT < EPSILON) //One intersection
 		d = (-b) / 2;
 	else // Two intersections
 	{
 		// Pick the intersection that is closest to the starting point of the ray, while givning a positive d
 		d = ((-b) / 2) - glm::sqrt(expressionInSQRT);
-
 		float otherPossibleD = ((-b) / 2) + glm::sqrt(expressionInSQRT);
 		if (d < EPSILON && otherPossibleD > EPSILON) // The intersecting ray is coming from inside the object
 		{
 			d = otherPossibleD;
 			isInside = true;
+			//std::cout << "kjkl\n";
 		}
 	}
 
@@ -95,8 +98,33 @@ std::pair<float, Triangle> Sphere::rayIntersection(Ray& arg) const
 	//std::cout << rayEnd.x + rayDirectionNormalized.x*d << "\n";
 
 	if (d < EPSILON) // Intersection located behind the object
-		return std::make_pair(-1, Triangle());
+		return {};
 
-	return std::make_pair(d, Triangle(glm::vec4(intersection, 1.0), intersectionPointNormal, getColor()));
+	return IntersectionData{
+		arg.getStart() + Vertex{ arg.getNormalizedDirection() * (float)d, 1.0f },
+		intersectionPointNormal,
+		(float)d
+	};
 
+}
+
+TriangleObj::TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Color color)
+	: SceneObject{ brdf, color }, _basicTriangle{v1, v2, v3, color }
+{ }
+
+TriangleObj::TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color)
+	: SceneObject{ brdf, color }, _basicTriangle{ v1, v2, v3, normal, color }
+{ }
+
+std::optional<IntersectionData> TriangleObj::rayIntersection(Ray& arg) const
+{
+	float t = _basicTriangle.rayIntersection(arg);
+	if (t == -1)
+		return {};
+
+	return IntersectionData{
+		arg.getStart() + Vertex{ arg.getNormalizedDirection() * t, 1.0f },
+		_basicTriangle.getNormal(),
+		t
+	};
 }
