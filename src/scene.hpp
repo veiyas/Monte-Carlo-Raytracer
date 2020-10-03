@@ -34,7 +34,7 @@ private:
 	// Checks for intersections and if so attaches intersection data to arg
 	bool rayIntersection(Ray& arg);
 	double shadowRayContribution(const Vertex& point, const Direction& normal) const;
-	bool objectIsVisible(const std::optional<IntersectionData>& input, const Direction& normal) const;
+	bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal) const;
 	//TODO these can probably be static
 	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const;
 	Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const;

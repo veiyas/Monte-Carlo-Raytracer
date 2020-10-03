@@ -78,10 +78,12 @@ Scene::Scene()
 	//_pointLights.emplace_back(Vertex(1, 0, 0, 1), Color(1, 1, 1)); // Centered
 
 	//// Algots scene
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
 	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 4.5f, -0.9f, 1.2f, 1.f });
-	_pointLights.emplace_back(Vertex(1, -1, 1, 1), Color(1, 1, 1));
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 8.f, -1.9f, -3.4f, 1.f });
+	//_pointLights.emplace_back(Vertex(3, 0, 4, 1), Color(1, 1, 1));
+	//_pointLights.emplace_back(Vertex(0, 0, 1, 1), Color(1, 1, 1));
+	_pointLights.emplace_back(Vertex(2, 1, 4, 1), Color(1, 1, 1));
 }
 
 Color Scene::raycastScene(Ray& initialRay)
@@ -168,30 +170,29 @@ double Scene::shadowRayContribution(const Vertex& point, const Direction& normal
 			{
 				if (itTetra != _tetrahedrons.end() && visible)
 				{
-					visible = objectIsVisible(itTetra->rayIntersection(shadowRay), normal);
+					visible = objectIsVisible(shadowRay, *itTetra, itTetra->rayIntersection(shadowRay), normal);
 					++itTetra;
 				}
 				if (itSphere != _spheres.end() && visible)
 				{
-					visible = objectIsVisible(itSphere->rayIntersection(shadowRay), normal);
+					visible = objectIsVisible(shadowRay, *itSphere, itSphere->rayIntersection(shadowRay), normal);
 					++itSphere;
 				}
 			}			
 		}
-		lightContribution += normalDotContribution; // *visible; TODO
+		lightContribution += normalDotContribution * visible;
 	}
 	return lightContribution;
 }
 
-bool Scene::objectIsVisible(const std::optional<IntersectionData>& input, const Direction& normal) const
+bool Scene::objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal) const
 {
-	if (input.has_value() // Intersection must exist
-		//&& input.first < 1 // Intersections with t > 1 are behind the light
-		// TODO Check for transparency
-		&& normal != input.value()._normal)
-		return false;
-	else
-		return true;
+	return !(
+		input.has_value() // Intersection must exist
+		// Check if intersection is on the right side of the light (maybe this could be improved performance-wise?)
+		&& glm::length(glm::vec3(ray.getEnd() - ray.getStart())) > glm::length(input->_t * ray.getNormalizedDirection())
+		&& obj.getBRDF().getSurfaceType() != BRDF::TRANSPARENT
+	);
 }
 
 Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const
