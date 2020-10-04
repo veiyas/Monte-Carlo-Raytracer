@@ -248,6 +248,15 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 	{
 		currentRay = rays.front();
 		rays.pop();
+
+		auto rayImportance = currentRay->getColor();
+		static constexpr float EPS = 0.0001;
+		if (rayImportance.r < EPS && rayImportance.g < EPS && rayImportance.b < EPS)
+		{
+			// Ray will not contribute much to final image
+			continue;
+		}
+
 		// The rayIntersection method adds intersection info to ray
 		bool intersected = scene.rayIntersection(*currentRay);
 		if (!intersected)
@@ -367,8 +376,8 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 			Color leftSubContrib = traverseRayTree(scene, current->getLeft()) * current->getLeft()->getColor();
 			Color rightSubContrib = traverseRayTree(scene, current->getRight()) * current->getRight()->getColor();
 
-			//return (leftSubContrib + rightSubContrib) / current->getColor();
-			return (leftSubContrib + rightSubContrib);
+			return (leftSubContrib + rightSubContrib) / current->getColor();
+			//return (leftSubContrib + rightSubContrib);
 		}
 	}
 	return result;
