@@ -21,6 +21,10 @@ add_executable(${PROJECT_NAME}
   src/brdf.cpp
   src/camera.hpp
   src/camera.cpp
+  src/triangle.hpp
+  src/triangle.cpp
+  src/ray.hpp
+  src/ray.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
   src
