@@ -15,7 +15,7 @@ Scene::Scene()
 			BRDF::DIFFUSE,
 			floorVertices[i], floorVertices[i + 1], floorVertices[i + 2],
 			Direction{ 0.f, 0.f, 1.f },
-			Color{ 0.2, 0.2, 1.0 });
+			Color{ 0.8, 0.8, 0.8 });
 	}
 
 	//Ceiling triangles
@@ -25,7 +25,7 @@ Scene::Scene()
 			BRDF::DIFFUSE,
 			ceilingVertices[i], ceilingVertices[i + 1], ceilingVertices[i + 2],
 			Direction{ 0.f, 0.f, -1.f },
-			Color{ 1.0, 0.27, 0.27 });
+			Color{ 0.8, 0.8, 0.8 });
 	}
 
 	//// Clown room :))
@@ -38,10 +38,10 @@ Scene::Scene()
 	//	Color{ 0.5, 0.0, 0.5 },
 	//};
 
-	constexpr Color colooor = Color{ 1,1,1 };
+	constexpr Color colooor = Color{ 0.2, 0.65, 0.92 };
 	constexpr Color wallColors[6] = {
-		colooor, colooor, colooor,
-		colooor, colooor, colooor
+		Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 },
+		Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }
 	};
 
 	//Wall triangles
@@ -79,8 +79,8 @@ Scene::Scene()
 
 	//// Algots scene
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
-	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 0.1, 1.0, 0.1 }, Vertex{ 8.f, -1.9f, -3.4f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, -2.f, -1.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 8.f, 3.5f, -3.4f, 1.f });
 	//_pointLights.emplace_back(Vertex(3, 0, 4, 1), Color(1, 1, 1));
 	//_pointLights.emplace_back(Vertex(0, 0, 1, 1), Color(1, 1, 1));
 	_pointLights.emplace_back(Vertex(2, 1, 4, 1), Color(1, 1, 1));
@@ -226,6 +226,7 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 }
 
 Scene::RayTree::RayTree(Ray& initialRay)
+	: _gen{ std::random_device{}()}, _rng{0.f, 1.f}
 {
 	_head = std::make_unique<Ray>(initialRay);
 	_treeSize = 1;
@@ -242,8 +243,54 @@ Direction Scene::computeShadowRayDirection(const Vertex& point) const
 	return glm::normalize(glm::vec3(_pointLights[0].getPosition()) - glm::vec3(point));
 }
 
-void Scene::RayTree::constructRayTree(Scene& scene) const
+void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection)
 {
+	Ray randomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
+}
+
+Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint)
+{
+	//Determine local coordinate system and transformations matrices for it
+	const glm::vec3 Z{ normal };
+	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
+	const glm::vec3 Y = glm::cross(-X, Z);
+	/* GLM: Column major order
+	 0  4  8  12
+	 1  5  9  13
+	 2  6 10  14
+	 3  7 11  15
+	*/
+	const glm::mat4 toLocalCoord =
+		glm::mat4{
+		X.x, Y.x, Z.x, 0.f,
+		X.y, Y.y, Z.y, 0.f,
+		X.z, Y.z, Z.z, 0.f,
+		0.f, 0.f, 0.f, 1.f } *
+		glm::mat4{
+		1.f, 0.f, 0.f, 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		-intersectPoint.x, -intersectPoint.y, -intersectPoint.z, 1.f
+	};
+	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
+
+	//Generate random azimuth (phi) and inclination (theta)
+	float phi = TWO_PI * _rng(_gen);
+	float theta = glm::asin(glm::sqrt(_rng(_gen)));
+	const float x = glm::cos(phi) * glm::sin(theta); //Are these local? RNG doesnt care about coordinate systems
+	const float y = glm::sin(phi) * glm::sin(theta);
+	const float z = glm::cos(theta);
+	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
+
+	//Debug helper
+	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
+
+	return Ray{ intersectPoint, globalReflected };
+}
+
+void Scene::RayTree::constructRayTree(Scene& scene)
+{
+	//TODO this method needs to be shortened
 	std::queue<Ray*> rays;
 	Ray* currentRay = _head.get();
 	rays.push(currentRay);
@@ -279,6 +326,10 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 			currentRay->getLeft()->setColor(currentRay->getColor());
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
+		}
+		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::DIFFUSE)
+		{
+			monteCarloDiffuseContribution(currentRay, currentIntersection);
 		}
 		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::TRANSPARENT)
 		{

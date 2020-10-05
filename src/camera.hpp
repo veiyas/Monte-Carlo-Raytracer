@@ -33,8 +33,8 @@ private:
 	PixelGrid _pixels{ HEIGHT, std::vector<Pixel>(WIDTH) };
 
 	// Random generator stuff
-	std::mt19937 gen;
-	std::uniform_real_distribution<float> rng;
+	std::mt19937 _gen;
+	std::uniform_real_distribution<float> _rng;
 
 	void renderThreadFunction(int row, Scene& scene);
 };

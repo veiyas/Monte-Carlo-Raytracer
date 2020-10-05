@@ -6,12 +6,15 @@
 #include <thread>
 #include <iomanip>
 #include <queue>
+#include <random>
 
 #include <glm/gtx/vector_angle.hpp>
 
 #include "basic_types.hpp"
 #include "shapes.hpp"
 #include "lights.hpp"
+
+#define TWO_PI 6.28318
 
 class Scene
 {
@@ -52,11 +55,17 @@ private:
 		std::unique_ptr<Ray> _head;
 		Color _finalColor;
 		size_t _treeSize;
-
 		constexpr static size_t maxTreeSize = 512;		
+
+		// Random generator stuff for monte carlo
+		std::mt19937 _gen;
+		std::uniform_real_distribution<float> _rng;
+		void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection);
+		Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint);
 		
-		void constructRayTree(Scene& scene) const;
+		void constructRayTree(Scene& scene);
 		Color traverseRayTree(const Scene& scene, Ray* input) const;
+
 		void attachReflected(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const;
 		void attachRefracted(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const;
 	};

@@ -7,11 +7,9 @@
 
 #include "ray.hpp"
 
-Camera::Camera(bool eyePoint) : _eyeToggle{ eyePoint }
+Camera::Camera(bool eyePoint)
+	: _eyeToggle{ eyePoint }, _gen{ std::random_device{}() }, _rng{0.f, 1.f}
 {
-	std::random_device rd;
-	gen = std::mt19937(rd());
-	rng = std::uniform_real_distribution<float>(0.0f, 1.0f);
 }
 
 void Camera::render(Scene& scene)
@@ -38,8 +36,6 @@ void Camera::render(Scene& scene)
 		{
 			thread.join();
 		}
-
-		//std::cout << row << "\n";
 	}
 
 	auto endTime = std::chrono::high_resolution_clock::now();
@@ -56,8 +52,8 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 
 	for (int col = 0; col < WIDTH; ++col)
 	{
-		float yOffset = rng(gen);
-		float zOffset = rng(gen);
+		float yOffset = _rng(_gen);
+		float zOffset = _rng(_gen);
 		//float yOffset = 0.5f;
 		//float zOffset = 0.5f;
 
