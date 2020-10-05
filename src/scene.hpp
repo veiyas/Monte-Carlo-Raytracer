@@ -27,17 +27,19 @@ private:
 	std::vector<PointLight> _pointLights;
 
 	static constexpr float _ambientContribution = 0.2f;
-	static constexpr float _airIndex = 1.f;
-	static constexpr float _glassIndex = 1.5f;
 	long long unsigned _nCalculations = 0;
 
 	// Checks for intersections and if so attaches intersection data to arg
 	bool rayIntersection(Ray& arg);
 	double shadowRayContribution(const Vertex& point, const Direction& normal) const;
 	bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal) const;
-	//TODO these can probably be static
+	
+	//TODO these things maybe fits better in RayTree
+	static constexpr float _airIndex = 1.f;
+	static constexpr float _glassIndex = 1.5f;
 	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const;
 	Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const;
+	Direction computeShadowRayDirection(const Vertex& point) const;
 
 	class RayTree
 	{
@@ -52,6 +54,8 @@ private:
 		size_t _treeSize;
 
 		constexpr static size_t maxTreeSize = 512;
+
+		
 		
 		void constructRayTree(Scene& scene) const;
 		//double findTotalShadow(Ray* input) const;

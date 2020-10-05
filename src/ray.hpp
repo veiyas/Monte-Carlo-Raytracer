@@ -6,7 +6,6 @@
 #include "shapes.hpp"
 
 
-
 class Ray
 {
 public:
@@ -14,8 +13,6 @@ public:
 	Ray(Vertex start, Vertex end, Color color);
 	Ray(Ray& ray);
 	Ray(Ray&& ray) = default;
-
-	static void initVertexList();
 
 	void setLeft(Ray&& ray) { _left = std::make_unique<Ray>(ray); }
 	Ray* getLeft() { return  _left ? _left.get() : nullptr; }
@@ -32,25 +29,25 @@ public:
 	bool isInsideObject() const { return _isInsideObject; }
 
 	// The color member is used to store importance when casting from camera
-	Color getColor() const { return _rayColor; }
+	Color getColor() const { return _rayColor; } //TODO Make this include BRDF contib.
 	void setColor(const Color color) { _rayColor = color; }
 
 	// Maybe this could be optimized...
 	void setIntersectionData(IntersectionData data) { _intersectionData = data; }
 	const std::optional<IntersectionData>& getIntersectionData() const { return _intersectionData; }
 	void setIntersectedObject(const SceneObject* obj) { _intersectedObject = obj; }
-	const std::optional<const SceneObject*> getIntersectedObject() const { return _intersectedObject; }
+	const std::optional<const SceneObject*>& getIntersectedObject() const { return _intersectedObject; }
 
 private:
 	std::unique_ptr<Vertex> _end;
 	std::unique_ptr<Vertex> _start;
-	static std::vector<Vertex> _imagePlaneVertices; //?????
 
 	bool _isInsideObject = false;
 
 	std::optional<IntersectionData> _intersectionData;
 	std::optional<const SceneObject*> _intersectedObject;
 
+	//Unique ptrs are used to avoid memory leaks
 	//Left: reflected, Right: refracted
 	std::unique_ptr<Ray> _left;
 	std::unique_ptr<Ray> _right;

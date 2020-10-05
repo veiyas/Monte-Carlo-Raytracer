@@ -19,7 +19,8 @@ public:
 	SceneObject(BRDF brdf, Color color)
 		: _brdf{ std::move(brdf) }, _color{ color } {}
 
-	const BRDF& getBRDF() const { return _brdf; }
+	const BRDF& accessBRDF() const { return _brdf; }
+	BRDF getBRDF() const { return _brdf; }
 	Color getColor() const { return _color; }
 private:
 	const BRDF _brdf;
