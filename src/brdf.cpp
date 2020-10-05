@@ -32,6 +32,8 @@ double BRDF::computeOrenNayar(const Direction& incoming, const Direction& shadow
 
 	//My code above doesnt work and i dont know why
 	//This code below works and i dont know why
+	//Lets not dwell on it, borrowed from https://github.com/kbladin/Monte_Carlo_Ray_Tracer/blob/master/src/Scene.cpp
+	//TODO license???
 
 	double A = 1.0 - 0.5 * (_roughness / (_roughness + 0.33));
 	double B = 0.45 * (_roughness / (_roughness + 0.09));

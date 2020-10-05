@@ -53,12 +53,9 @@ private:
 		Color _finalColor;
 		size_t _treeSize;
 
-		constexpr static size_t maxTreeSize = 512;
-
-		
+		constexpr static size_t maxTreeSize = 512;		
 		
 		void constructRayTree(Scene& scene) const;
-		//double findTotalShadow(Ray* input) const;
 		Color traverseRayTree(const Scene& scene, Ray* input) const;
 		void attachReflected(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const;
 		void attachRefracted(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const;

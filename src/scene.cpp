@@ -255,12 +255,11 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 		rays.pop();
 
 		auto rayImportance = currentRay->getColor();
+
+		// Ray will not contribute much to final image
 		static constexpr float EPS = 0.0001;
-		if (rayImportance.r < EPS && rayImportance.g < EPS && rayImportance.b < EPS)
-		{
-			// Ray will not contribute much to final image
+		if (rayImportance.r < EPS && rayImportance.g < EPS && rayImportance.b < EPS)			
 			continue;
-		}
 
 		// The rayIntersection method adds intersection info to ray
 		bool intersected = scene.rayIntersection(*currentRay);
@@ -281,12 +280,8 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
 		}
-		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::DIFFUSE)
-		{
-		}
 		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::TRANSPARENT)
 		{
-			//std::cout << "uuuu\n";
 			float incAngle = glm::angle(-currentRay->getNormalizedDirection(), currentIntersection._normal);
 
 			// How much of the incoming importance/radiance is reflected, between 0 and 1.
@@ -301,46 +296,26 @@ void Scene::RayTree::constructRayTree(Scene& scene) const
 			float brewsterAngle = asin(_airIndex/_glassIndex); // In radians // TODO Store this somewhere!
 
 			if (currentRay->isInsideObject() && incAngle > brewsterAngle) // Total internal reflection
-			{
-				//std::cout << "Total internal reflection\n";
 				reflectionCoeff = 1.f;
-			}
-			else // Transmission occurs
+			else // Transmission occurs, Schlicks equation for radiance distribution
 			{
-				// Schlicks equation for radiance distribution
 				double R0 = pow((n1 - n2) / (n1 + n2), 2);
 				reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
 
 				attachRefracted(scene, currentIntersection, currentRay);
 
-				//if (currentRay->isInsideObject()) std::cout << "Transmission from inside object\n";
-
-				// TODO BRDF should be used in these calculations
 				currentRay->getRight()->setColor((1.0 - reflectionCoeff) * currentRay->getColor());
-				//if (currentRay->getRight()->isInsideObject()) std::cout << "jasa\n";
 				rays.push(currentRay->getRight());
 				++rayTreeCounter;
 			}
-
-			// Always cast reflected ray
 			attachReflected(scene, currentIntersection, currentRay);
-			// TODO BRDF should be used in these calculations
+
 			currentRay->getLeft()->setColor(reflectionCoeff * currentRay->getColor());
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
 		}
 	}
 }
-
-//double Scene::RayTree::findTotalShadow(Ray* input) const
-//{
-//	Ray* current = input;
-//	while (current->getParent())
-//	{
-//		current = current->getParent();
-//	}
-//	return current->getShadow();
-//}
 
 Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 {
@@ -401,8 +376,6 @@ void Scene::RayTree::attachReflected(const Scene& scene, const IntersectionData&
 
 	// Reflected ray will always continue in the same medium
 	reflectedRay.setInsideObject(currentRay->isInsideObject());
-
-	//std::cout << std::string{ glm::to_string(reflectedRay.getStart()) + glm::to_string(reflectedRay.getEnd()) + '\n' };
 
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);
