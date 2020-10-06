@@ -26,7 +26,7 @@ private:
 	const unsigned _surfaceType;
 
 	//https://en.wikipedia.org/wiki/Oren-Nayar_reflectance_model
-	constexpr static double _roughness = 1.5; //Variance == roughness
+	constexpr static double _roughnessSquared = 0.5 * 0.5; //Variance == roughness
 	constexpr static double _albedo = 0.9; //How much light is reflected, 1-albedo is absorbed
 	
 };
