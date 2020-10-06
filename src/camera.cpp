@@ -7,8 +7,9 @@
 
 #include "ray.hpp"
 
-Camera::Camera(bool eyePoint)
-	: _eyeToggle{ eyePoint }, _gen{ std::random_device{}() }, _rng{0.f, 1.f}
+Camera::Camera(bool eyePoint, int resolution)
+	: _eyeToggle{ eyePoint }, WIDTH{ resolution }, HEIGHT{ resolution },
+	  pixelSideLength{ 2.0f / resolution }, _gen{ std::random_device{}() }, _rng{ 0.f, 1.f }
 {
 }
 

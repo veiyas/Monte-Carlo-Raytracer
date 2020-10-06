@@ -13,7 +13,8 @@ int main()
 
 	Scene testScene{};
 
-	Camera testCamera{ false };
+	//Camera testCamera{ false };
+	Camera testCamera{ false, 400 };
 	testCamera.render(testScene);
 	testCamera.createPNG();
 
