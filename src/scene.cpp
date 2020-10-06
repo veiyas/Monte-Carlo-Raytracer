@@ -94,7 +94,7 @@ Scene::Scene()
 Color Scene::raycastScene(Ray& initialRay)
 {
 	RayTree tree{ initialRay };
-	tree.raytracePixel();
+	tree.raytracePixel(false);
 	return tree.getPixelColor();
 }
 
@@ -237,10 +237,10 @@ Scene::RayTree::RayTree(Ray& initialRay)
 	_treeSize = 1;
 }
 
-void Scene::RayTree::raytracePixel()
+void Scene::RayTree::raytracePixel(bool isMonteCarloTree)
 {
-	constructRayTree();
-	_finalColor = traverseRayTree(_head.get());
+	constructRayTree(isMonteCarloTree);
+	_finalColor = traverseRayTree(_head.get(), isMonteCarloTree);
 }
 
 Direction Scene::computeShadowRayDirection(const Vertex& point)
@@ -250,12 +250,14 @@ Direction Scene::computeShadowRayDirection(const Vertex& point)
 
 void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection)
 {
-	//Ray firstRandomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
-	//Ray* currentRay = &firstRandomReflectedRay;
-	//bool rayIsActive = true;
-	//while (rayIsActive)
-	//{
-	//}
+	Ray firstRandomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
+	firstRandomReflectedRay.setParent(initialRay);
+	firstRandomReflectedRay.setColor(Color(1.0, 1.0, 1.0));
+	RayTree monteCarloTree{ firstRandomReflectedRay };
+	monteCarloTree.raytracePixel(true);
+	
+	initialRay->setLeft(std::move(*monteCarloTree._head));
+	initialRay->setColor(monteCarloTree.getPixelColor());
 }
 
 Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint)
@@ -298,7 +300,7 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	return Ray{ intersectPoint, globalReflected };
 }
 
-void Scene::RayTree::constructRayTree()
+void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 {
 	//TODO this method needs to be shortened
 	std::queue<Ray*> rays;
@@ -306,7 +308,7 @@ void Scene::RayTree::constructRayTree()
 	rays.push(currentRay);
 
 	size_t rayTreeCounter{ 0 };
-	while (!rays.empty() && rayTreeCounter < maxTreeSize)
+	while (!rays.empty() && rayTreeCounter < _maxTreeSize)
 	{
 		currentRay = rays.front();
 		rays.pop();
@@ -339,7 +341,23 @@ void Scene::RayTree::constructRayTree()
 		}
 		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::DIFFUSE)
 		{
-			monteCarloDiffuseContribution(currentRay, currentIntersection);
+			if (isMonteCarloTree)
+			{
+				float terminator = _rng(_gen);
+				if (terminator + _terminationProbability > 1.f) //Terminate ray
+				{
+					currentRay->setColor(currentIntersectObject->getColor() * (1.0 / _terminationProbability));
+				}
+				else
+				{
+					attachReflectedMonteCarlo(currentIntersection, currentRay);
+					currentRay->getLeft()->setColor(currentRay->getColor());
+					rays.push(currentRay->getLeft());
+					++rayTreeCounter;
+				}
+			}
+			else
+				monteCarloDiffuseContribution(currentRay, currentIntersection);
 		}
 		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::TRANSPARENT)
 		{
@@ -378,7 +396,7 @@ void Scene::RayTree::constructRayTree()
 	}
 }
 
-Color Scene::RayTree::traverseRayTree(Ray* input) const
+Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 {
 	Ray* currentRay = input;
 	Color result{};
@@ -402,10 +420,12 @@ Color Scene::RayTree::traverseRayTree(Ray* input) const
 						-currentRay->getNormalizedDirection(),
 						computeShadowRayDirection(intersectData._intersectPoint),
 						intersectData._normal);
-				return currentRay->getIntersectedObject().value()->getColor()
+				Color rayColor = currentRay->getColor();
+				Color objColor = currentRay->getIntersectedObject().value()->getColor();
+				Color finalColor = objColor;
+				return finalColor * roughness
 					* shadowRayContribution(intersectData._intersectPoint,
-												  intersectData._normal)
-					* roughness;
+						intersectData._normal);					
 			}
 			else
 			{
@@ -418,8 +438,8 @@ Color Scene::RayTree::traverseRayTree(Ray* input) const
 			currentRay = currentRay->getRight();
 		else if (left && right)
 		{
-			Color leftSubContrib = traverseRayTree(currentRay->getLeft()) * currentRay->getLeft()->getColor();
-			Color rightSubContrib = traverseRayTree(currentRay->getRight()) * currentRay->getRight()->getColor();
+			Color leftSubContrib = traverseRayTree(currentRay->getLeft(), isMonteCarloTree) * currentRay->getLeft()->getColor();
+			Color rightSubContrib = traverseRayTree(currentRay->getRight(), isMonteCarloTree) * currentRay->getRight()->getColor();
 
 			return (leftSubContrib + rightSubContrib) / currentRay->getColor();
 			//return (leftSubContrib + rightSubContrib);
@@ -437,6 +457,19 @@ void Scene::RayTree::attachReflected(const IntersectionData& intData, Ray* curre
 
 	// Reflected ray will always continue in the same medium
 	reflectedRay.setInsideObject(currentRay->isInsideObject());
+
+	currentRay->setLeft(std::move(reflectedRay));
+	currentRay->getLeft()->setParent(currentRay);
+}
+
+void Scene::RayTree::attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay)
+{
+	Ray reflectedRay = generateRandomReflectedRay(
+		currentRay->getNormalizedDirection(),
+		intData._normal,
+		intData._intersectPoint);
+	reflectedRay.setInsideObject(currentRay->isInsideObject());
+	reflectedRay.setColor(Color(1.0, 1.0, 1.0));
 
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);
