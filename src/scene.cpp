@@ -61,7 +61,7 @@ Scene::Scene()
 		_sceneTris.emplace_back(
 			BRDF::DIFFUSE,
 			wallVertices[i], wallVertices[i + 1], wallVertices[i + 2],
-			wallNormals[wallNormalCounter],
+			glm::normalize(wallNormals[wallNormalCounter]), // The normalize is needed with the current values in wallNormals
 			wallColors[(i/3)/2]);
 
 	}
@@ -425,7 +425,7 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 				Color finalColor = objColor;
 				return finalColor * roughness
 					* shadowRayContribution(intersectData._intersectPoint,
-						intersectData._normal);					
+						intersectData._normal);
 			}
 			else
 			{

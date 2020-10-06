@@ -35,8 +35,8 @@ double BRDF::computeOrenNayar(const Direction& incoming, const Direction& shadow
 	//Lets not dwell on it, borrowed from https://github.com/kbladin/Monte_Carlo_Ray_Tracer/blob/master/src/Scene.cpp
 	//TODO license???
 
-	double A = 1.0 - 0.5 * (_roughness / (_roughness + 0.33));
-	double B = 0.45 * (_roughness / (_roughness + 0.09));
+	double A = 1.0 - 0.5 * (_roughnessSquared / (_roughnessSquared + 0.33));
+	double B = 0.45 * (_roughnessSquared / (_roughnessSquared + 0.09));
 	double cosThetaIncoming = glm::dot(incoming, normal);
 	double cosThetaShadowRay = glm::dot(shadowRay, normal);
 	double thetaShadowRay = glm::acos(cosThetaShadowRay);
@@ -45,5 +45,5 @@ double BRDF::computeOrenNayar(const Direction& incoming, const Direction& shadow
 	double beta = glm::min(thetaShadowRay, thetaIncoming);
 	double cosIncomingShadowRay = glm::dot(incoming, shadowRay);
 
-	return _albedo / glm::pi<double>() * (A + (B * glm::max(0.0, cosIncomingShadowRay)) * glm::sin(alpha) * glm::tan(beta));
+	return (_albedo / glm::pi<double>()) * (A + (B * glm::max(0.0, cosIncomingShadowRay)) * glm::sin(alpha) * glm::tan(beta));
 }
