@@ -16,39 +16,39 @@
 
 #define TWO_PI 6.28318
 
-class Scene
+class Scene //Let's get static B) (This is now an implicit singleton)
 {
 public:
 	Scene();
-
 	Color raycastScene(Ray& initialRay);
 	unsigned getNCalculations() const { return _nCalculations; }
+
 private:
-	std::vector<TriangleObj> _sceneTris;
-	std::vector<Tetrahedron> _tetrahedrons;
-	std::vector<Sphere> _spheres;
-	std::vector<PointLight> _pointLights;
+	static std::vector<TriangleObj> _sceneTris;
+	static std::vector<Tetrahedron> _tetrahedrons;
+	static std::vector<Sphere> _spheres;
+	static std::vector<PointLight> _pointLights;
+	static long long unsigned _nCalculations;
 
 	static constexpr float _ambientContribution = 0.2f;
-	long long unsigned _nCalculations = 0;
 
 	// Checks for intersections and if so attaches intersection data to arg
-	bool rayIntersection(Ray& arg);
-	double shadowRayContribution(const Vertex& point, const Direction& normal) const;
-	bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal) const;
+	static bool rayIntersection(Ray& arg);
+	static double shadowRayContribution(const Vertex& point, const Direction& normal);
+	static bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal);
 	
 	//TODO these things maybe fits better in RayTree
 	static constexpr float _airIndex = 1.f;
 	static constexpr float _glassIndex = 1.5f;
-	Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const;
-	Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const;
-	Direction computeShadowRayDirection(const Vertex& point) const;
+	static Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint);
+	static Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
+	static Direction computeShadowRayDirection(const Vertex& point);
 
 	class RayTree
 	{
 	public:
 		RayTree(Ray& initialRay);
-		void raytrace(Scene& scene);
+		void raytracePixel();
 		Color getPixelColor() const { return _finalColor; }
 
 	private:
@@ -62,12 +62,12 @@ private:
 		std::uniform_real_distribution<float> _rng;
 		void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection);
 		Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint);
-		
-		void constructRayTree(Scene& scene);
-		Color traverseRayTree(const Scene& scene, Ray* input) const;
 
-		void attachReflected(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const;
-		void attachRefracted(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const;
+		void constructRayTree();
+		Color traverseRayTree(Ray* input) const;
+
+		void attachReflected(const IntersectionData& intData, Ray* currentRay) const;
+		void attachRefracted(const IntersectionData& intData, Ray* currentRay) const;
 	};
 };
 

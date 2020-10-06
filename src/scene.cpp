@@ -3,6 +3,11 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "ray.hpp"
+std::vector<TriangleObj> Scene::_sceneTris;
+std::vector<Tetrahedron> Scene::_tetrahedrons;
+std::vector<Sphere> Scene::_spheres;
+std::vector<PointLight> Scene::_pointLights;
+long long unsigned Scene::_nCalculations = 0;
 
 Scene::Scene()
 {
@@ -89,7 +94,7 @@ Scene::Scene()
 Color Scene::raycastScene(Ray& initialRay)
 {
 	RayTree tree{ initialRay };
-	tree.raytrace(*this);
+	tree.raytracePixel();
 	return tree.getPixelColor();
 }
 
@@ -146,7 +151,7 @@ bool Scene::rayIntersection(Ray& ray)
 	return false;
 }
 
-double Scene::shadowRayContribution(const Vertex& point, const Direction& normal) const
+double Scene::shadowRayContribution(const Vertex& point, const Direction& normal)
 {
 	double lightContribution = 0.f;
 
@@ -185,7 +190,7 @@ double Scene::shadowRayContribution(const Vertex& point, const Direction& normal
 	return lightContribution;
 }
 
-bool Scene::objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal) const
+bool Scene::objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal)
 {
 	return !(
 		input.has_value() // Intersection must exist
@@ -195,7 +200,7 @@ bool Scene::objectIsVisible(const Ray& ray, const SceneObject& obj, const std::o
 	);
 }
 
-Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint) const
+Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint)
 {
 	Direction incomingRayDirection = incomingRay.getNormalizedDirection();
 	//Angle between normal and incoming ray
@@ -208,7 +213,7 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 	            Vertex{ Direction(intersectionPoint) + reflectedDirection, 1.f } };
 }
 
-Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject) const
+Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject)
 {
 	Direction incomingDir = incomingRay.getNormalizedDirection();
 	const float n1n2 = insideObject ? _glassIndex / _airIndex : _airIndex / _glassIndex;
@@ -232,20 +237,25 @@ Scene::RayTree::RayTree(Ray& initialRay)
 	_treeSize = 1;
 }
 
-void Scene::RayTree::raytrace(Scene& scene)
+void Scene::RayTree::raytracePixel()
 {
-	constructRayTree(scene);
-	_finalColor = traverseRayTree(scene, _head.get());
+	constructRayTree();
+	_finalColor = traverseRayTree(_head.get());
 }
 
-Direction Scene::computeShadowRayDirection(const Vertex& point) const
+Direction Scene::computeShadowRayDirection(const Vertex& point)
 {
 	return glm::normalize(glm::vec3(_pointLights[0].getPosition()) - glm::vec3(point));
 }
 
 void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection)
 {
-	Ray randomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
+	//Ray firstRandomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
+	//Ray* currentRay = &firstRandomReflectedRay;
+	//bool rayIsActive = true;
+	//while (rayIsActive)
+	//{
+	//}
 }
 
 Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint)
@@ -288,7 +298,7 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	return Ray{ intersectPoint, globalReflected };
 }
 
-void Scene::RayTree::constructRayTree(Scene& scene)
+void Scene::RayTree::constructRayTree()
 {
 	//TODO this method needs to be shortened
 	std::queue<Ray*> rays;
@@ -309,7 +319,7 @@ void Scene::RayTree::constructRayTree(Scene& scene)
 			continue;
 
 		// The rayIntersection method adds intersection info to ray
-		bool intersected = scene.rayIntersection(*currentRay);
+		bool intersected = rayIntersection(*currentRay);
 		if (!intersected)
 		{
 			std::cout << "A ray with no intersections detected\n";
@@ -322,7 +332,7 @@ void Scene::RayTree::constructRayTree(Scene& scene)
 		if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::REFLECTOR)
 		{
 			// All importance is reflected
-			attachReflected(scene, currentIntersection, currentRay);
+			attachReflected(currentIntersection, currentRay);
 			currentRay->getLeft()->setColor(currentRay->getColor());
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
@@ -353,13 +363,13 @@ void Scene::RayTree::constructRayTree(Scene& scene)
 				double R0 = pow((n1 - n2) / (n1 + n2), 2);
 				reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
 
-				attachRefracted(scene, currentIntersection, currentRay);
+				attachRefracted(currentIntersection, currentRay);
 
 				currentRay->getRight()->setColor((1.0 - reflectionCoeff) * currentRay->getColor());
 				rays.push(currentRay->getRight());
 				++rayTreeCounter;
 			}
-			attachReflected(scene, currentIntersection, currentRay);
+			attachReflected(currentIntersection, currentRay);
 
 			currentRay->getLeft()->setColor(reflectionCoeff * currentRay->getColor());
 			rays.push(currentRay->getLeft());
@@ -368,7 +378,7 @@ void Scene::RayTree::constructRayTree(Scene& scene)
 	}
 }
 
-Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
+Color Scene::RayTree::traverseRayTree(Ray* input) const
 {
 	Ray* currentRay = input;
 	Color result{};
@@ -390,10 +400,10 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 				const double roughness =
 					intersectObject->getBRDF().computeOrenNayar(
 						-currentRay->getNormalizedDirection(),
-						scene.computeShadowRayDirection(intersectData._intersectPoint),
+						computeShadowRayDirection(intersectData._intersectPoint),
 						intersectData._normal);
 				return currentRay->getIntersectedObject().value()->getColor()
-					* scene.shadowRayContribution(intersectData._intersectPoint,
+					* shadowRayContribution(intersectData._intersectPoint,
 												  intersectData._normal)
 					* roughness;
 			}
@@ -408,8 +418,8 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 			currentRay = currentRay->getRight();
 		else if (left && right)
 		{
-			Color leftSubContrib = traverseRayTree(scene, currentRay->getLeft()) * currentRay->getLeft()->getColor();
-			Color rightSubContrib = traverseRayTree(scene, currentRay->getRight()) * currentRay->getRight()->getColor();
+			Color leftSubContrib = traverseRayTree(currentRay->getLeft()) * currentRay->getLeft()->getColor();
+			Color rightSubContrib = traverseRayTree(currentRay->getRight()) * currentRay->getRight()->getColor();
 
 			return (leftSubContrib + rightSubContrib) / currentRay->getColor();
 			//return (leftSubContrib + rightSubContrib);
@@ -418,9 +428,9 @@ Color Scene::RayTree::traverseRayTree(const Scene& scene, Ray* input) const
 	return result;
 }
 
-void Scene::RayTree::attachReflected(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const
+void Scene::RayTree::attachReflected(const IntersectionData& intData, Ray* currentRay) const
 {
-	Ray reflectedRay = scene.computeReflectedRay(
+	Ray reflectedRay = Scene::computeReflectedRay(
 		intData._normal,
 		*currentRay,
 		intData._intersectPoint);
@@ -432,9 +442,9 @@ void Scene::RayTree::attachReflected(const Scene& scene, const IntersectionData&
 	currentRay->getLeft()->setParent(currentRay);
 }
 
-void Scene::RayTree::attachRefracted(const Scene& scene, const IntersectionData& intData, Ray* currentRay) const
+void Scene::RayTree::attachRefracted(const IntersectionData& intData, Ray* currentRay) const
 {
-	Ray refractedRay = scene.computeRefractedRay(
+	Ray refractedRay = Scene::computeRefractedRay(
 		intData._normal,
 		*currentRay,
 		intData._intersectPoint,
