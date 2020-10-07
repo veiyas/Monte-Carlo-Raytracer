@@ -28,7 +28,7 @@ private:
 	const int HEIGHT;
 	const float pixelSideLength;
 
-	static constexpr int _numOfRaysSentFromEachPixel = 150;
+	static constexpr int _numOfRaysSentFromEachPixel = 500;
 	
 	using PixelGrid = std::vector<std::vector<Pixel>>;
 	PixelGrid _pixels{ HEIGHT, std::vector<Pixel>(WIDTH) };

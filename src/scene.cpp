@@ -30,7 +30,7 @@ Scene::Scene()
 			BRDF::DIFFUSE,
 			ceilingVertices[i], ceilingVertices[i + 1], ceilingVertices[i + 2],
 			Direction{ 0.f, 0.f, -1.f },
-			Color{ 0.8, 0.8, 0.8 });
+			Color{ 1.0, 1.0, 1.0 });
 	}
 
 	//// Clown room :))
@@ -248,11 +248,11 @@ Direction Scene::computeShadowRayDirection(const Vertex& point)
 	return glm::normalize(glm::vec3(_pointLights[0].getPosition()) - glm::vec3(point));
 }
 
-void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection)
+void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj)
 {
 	Ray firstRandomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
 	firstRandomReflectedRay.setParent(initialRay);
-	firstRandomReflectedRay.setColor(Color(1.0, 1.0, 1.0));
+	firstRandomReflectedRay.setColor(initialRay->getColor() * intersectObj->getColor());
 	RayTree monteCarloTree{ firstRandomReflectedRay };
 	monteCarloTree.raytracePixel(true);
 	
@@ -289,7 +289,7 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	//Generate random azimuth (phi) and inclination (theta)
 	float phi = TWO_PI * _rng(_gen);
 	float theta = glm::asin(glm::sqrt(_rng(_gen)));
-	const float x = glm::cos(phi) * glm::sin(theta); //Are these local? RNG doesnt care about coordinate systems
+	const float x = glm::cos(phi) * glm::sin(theta); //are these local? RNG doesnt care about coordinate systems
 	const float y = glm::sin(phi) * glm::sin(theta);
 	const float z = glm::cos(theta);
 	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
@@ -346,18 +346,18 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 				float terminator = _rng(_gen);
 				if (terminator + _terminationProbability > 1.f) //Terminate ray
 				{
-					currentRay->setColor(currentIntersectObject->getColor() * (1.0 / _terminationProbability));
+					currentRay->setColor(currentRay->getColor() * (1.0 / _terminationProbability));
 				}
 				else
 				{
 					attachReflectedMonteCarlo(currentIntersection, currentRay);
-					currentRay->getLeft()->setColor(currentRay->getColor());
+					currentRay->getLeft()->setColor(currentRay->getColor() * currentIntersectObject->getColor());
 					rays.push(currentRay->getLeft());
 					++rayTreeCounter;
 				}
 			}
 			else
-				monteCarloDiffuseContribution(currentRay, currentIntersection);
+				monteCarloDiffuseContribution(currentRay, currentIntersection, currentIntersectObject);
 		}
 		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::TRANSPARENT)
 		{
@@ -421,11 +421,12 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 						computeShadowRayDirection(intersectData._intersectPoint),
 						intersectData._normal);
 				Color rayColor = currentRay->getColor();
-				Color objColor = currentRay->getIntersectedObject().value()->getColor();
+				Color objColor = intersectObject->getColor();
 				Color finalColor = objColor;
-				return finalColor * roughness
+				auto returnValue = finalColor * roughness * rayColor
 					* shadowRayContribution(intersectData._intersectPoint,
 						intersectData._normal);
+				return returnValue;
 			}
 			else
 			{
