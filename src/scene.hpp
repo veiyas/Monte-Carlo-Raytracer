@@ -61,7 +61,7 @@ private:
 		constexpr static float _terminationProbability = 0.2f;
 		std::mt19937 _gen;
 		std::uniform_real_distribution<float> _rng;
-		void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection);
+		void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj);
 		Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint);
 
 		void constructRayTree(const bool& isMonteCarloTree);

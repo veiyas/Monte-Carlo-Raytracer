@@ -11,7 +11,7 @@
 class Camera
 {
 public:
-	Camera(bool eyePoint = false);
+	Camera(bool eyePoint = false, int resolution = 800);
 
 	void render(Scene& scene);
 	void createPNG();
@@ -20,14 +20,15 @@ private:
 	const Vertex _eyePoint1{ -2.0f, 0.0f, 0.0f, 1.0f };
 	const Vertex _eyePoint2{ -1.0f, 0.0f, 0.0f, 1.0f };
 
-	static constexpr float pixelSideLength = 0.0025f;
-
 	// Decides which of the two eye points is used
 	bool _eyeToggle = false;
 
 	// The number of pixels in each direction
-	static constexpr int WIDTH = 800;
-	static constexpr int HEIGHT = 800;
+	const int WIDTH;
+	const int HEIGHT;
+	const float pixelSideLength;
+
+	static constexpr int _numOfRaysSentFromEachPixel = 500;
 	
 	using PixelGrid = std::vector<std::vector<Pixel>>;
 	PixelGrid _pixels{ HEIGHT, std::vector<Pixel>(WIDTH) };

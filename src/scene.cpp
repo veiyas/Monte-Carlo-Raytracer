@@ -29,7 +29,7 @@ Scene::Scene()
 			BRDF::DIFFUSE,
 			ceilingVertices[i], ceilingVertices[i + 1], ceilingVertices[i + 2],
 			Direction{ 0.f, 0.f, -1.f },
-			Color{ 0.8, 0.8, 0.8 });
+			Color{ 1.0, 1.0, 1.0 });
 	}
 
 	//// Clown room :))
@@ -60,7 +60,7 @@ Scene::Scene()
 		_sceneTris.emplace_back(
 			BRDF::DIFFUSE,
 			wallVertices[i], wallVertices[i + 1], wallVertices[i + 2],
-			wallNormals[wallNormalCounter],
+			glm::normalize(wallNormals[wallNormalCounter]), // The normalize is needed with the current values in wallNormals
 			wallColors[(i/3)/2]);
 
 	}
@@ -247,11 +247,11 @@ Direction Scene::computeShadowRayDirection(const Vertex& point)
 	return glm::normalize(glm::vec3(_pointLights[0].getPosition()) - glm::vec3(point));
 }
 
-void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection)
+void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj)
 {
 	Ray firstRandomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
 	firstRandomReflectedRay.setParent(initialRay);
-	firstRandomReflectedRay.setColor(Color(1.0, 1.0, 1.0));
+	firstRandomReflectedRay.setColor(initialRay->getColor() * intersectObj->getColor());
 	RayTree monteCarloTree{ firstRandomReflectedRay };
 	monteCarloTree.raytracePixel(true);
 	monteCarloTree._head->setParent(initialRay);
@@ -372,13 +372,13 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 				else
 				{
 					attachReflectedMonteCarlo(currentIntersection, currentRay);
-					currentRay->getLeft()->setColor(currentRay->getColor());
+					currentRay->getLeft()->setColor(currentRay->getColor() * currentIntersectObject->getColor());
 					rays.push(currentRay->getLeft());
 					++rayTreeCounter;
 				}
 			}
 			else
-				monteCarloDiffuseContribution(currentRay, currentIntersection);
+				monteCarloDiffuseContribution(currentRay, currentIntersection, currentIntersectObject);
 		}
 		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::TRANSPARENT)
 		{
@@ -447,6 +447,7 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 				return finalColor * roughness
 					* shadowRayContribution(intersectData._intersectPoint,
 						intersectData._normal);
+
 			}
 			else
 			{

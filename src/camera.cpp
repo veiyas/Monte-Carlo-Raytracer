@@ -7,8 +7,9 @@
 
 #include "ray.hpp"
 
-Camera::Camera(bool eyePoint)
-	: _eyeToggle{ eyePoint }, _gen{ std::random_device{}() }, _rng{0.f, 1.f}
+Camera::Camera(bool eyePoint, int resolution)
+	: _eyeToggle{ eyePoint }, WIDTH{ resolution }, HEIGHT{ resolution },
+	  pixelSideLength{ 2.0f / resolution }, _gen{ std::random_device{}() }, _rng{ 0.f, 1.f }
 {
 }
 
@@ -52,23 +53,27 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 
 	for (int col = 0; col < WIDTH; ++col)
 	{
-		float yOffset = _rng(_gen);
-		float zOffset = _rng(_gen);
-		//float yOffset = 0.5f;
-		//float zOffset = 0.5f;
+		for (int i = 0; i < _numOfRaysSentFromEachPixel; i++)
+		{
+			float yOffset = _rng(_gen);
+			float zOffset = _rng(_gen);
+			//float yOffset = 0.5f;
+			//float zOffset = 0.5f;
 
-		Vertex pixelPoint{
-			0.0f,
-			(col - (WIDTH / 2 + 1) + yOffset) * pixelSideLength,
-			(row - (HEIGHT / 2 + 1) + zOffset) * pixelSideLength,
-			1.0f
-		};
+			Vertex pixelPoint{
+				0.0f,
+				(col - (WIDTH / 2 + 1) + yOffset) * pixelSideLength,
+				(row - (HEIGHT / 2 + 1) + zOffset) * pixelSideLength,
+				1.0f
+			};
 
-		auto ray = std::make_shared<Ray>(_eyeToggle ? _eyePoint1 : _eyePoint2, pixelPoint, Color{ 1.0, 1.0, 1.0 });
+			auto ray = std::make_shared<Ray>(_eyeToggle ? _eyePoint1 : _eyePoint2, pixelPoint, Color{ 1.0, 1.0, 1.0 });
 
-		_pixels[row][col].addRay(ray);
+			_pixels[row][col].addRay(ray);
 
-		_pixels[row][col]._color = scene.raycastScene(*ray);
+			_pixels[row][col]._color += scene.raycastScene(*ray);
+		}
+
 	}
 }
 
