@@ -67,9 +67,9 @@ private:
 		void constructRayTree(const bool& isMonteCarloTree);
 		Color traverseRayTree(Ray* input, bool isMonteCarloTree) const;
 
-		void attachReflected(const IntersectionData& intData, Ray* currentRay) const;
+		void attachReflected(const IntersectionData& intData, Ray* currentRay);
 		void attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay);
-		void attachRefracted(const IntersectionData& intData, Ray* currentRay) const;
+		void attachRefracted(const IntersectionData& intData, Ray* currentRay);
 	};
 };
 

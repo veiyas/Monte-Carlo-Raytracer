@@ -1,8 +1,7 @@
 #include "scene.hpp"
-
+#include "ray.hpp"
 #include <glm/gtx/string_cast.hpp>
 
-#include "ray.hpp"
 std::vector<TriangleObj> Scene::_sceneTris;
 std::vector<Tetrahedron> Scene::_tetrahedrons;
 std::vector<Sphere> Scene::_spheres;
@@ -255,9 +254,11 @@ void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const Inters
 	firstRandomReflectedRay.setColor(Color(1.0, 1.0, 1.0));
 	RayTree monteCarloTree{ firstRandomReflectedRay };
 	monteCarloTree.raytracePixel(true);
+	monteCarloTree._head->setParent(initialRay);
 	
-	initialRay->setLeft(std::move(*monteCarloTree._head));
 	initialRay->setColor(monteCarloTree.getPixelColor());
+	int ere = 23;
+	initialRay->setLeft(std::move(*monteCarloTree._head));
 }
 
 Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint)
@@ -286,18 +287,38 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	};
 	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
 
-	//Generate random azimuth (phi) and inclination (theta)
+	glm::vec4 incomingDirLocal = toLocalCoord * glm::vec4(initialDirection, 1.f);
+	Direction incomingDirLocalNormalized = glm::normalize(glm::vec3(
+		incomingDirLocal.x,
+		incomingDirLocal.y,
+		incomingDirLocal.z));
+
 	float phi = TWO_PI * _rng(_gen);
 	float theta = glm::asin(glm::sqrt(_rng(_gen)));
-	const float x = glm::cos(phi) * glm::sin(theta); //Are these local? RNG doesnt care about coordinate systems
-	const float y = glm::sin(phi) * glm::sin(theta);
+	const float x = glm::cos(phi) * glm::sin(theta);
+	const float y = glm::sin(phi ) * glm::sin(theta);
 	const float z = glm::cos(theta);
-	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
+
+	Direction reflectedDirLocal = glm::vec3(
+		-incomingDirLocalNormalized.x + x,
+		-incomingDirLocalNormalized.y + y,
+		-incomingDirLocalNormalized.z + z);
+	glm::vec4 reflectedDirGlobal = toGlobalCoord * glm::vec4(reflectedDirLocal, 1.f);
+
+	//Generate random azimuth (phi) and inclination (theta)
+	//Are these local? RNG doesnt care about coordinate systems
+	//const glm::vec3 xUnit{ 1, 0, 0 };
+	//const glm::vec3 yUnit{ 0, 1, 0 };
+	//const glm::vec3 zUnit{ 0, 0, 1 };
+
+	//const glm::vec3 Xprojx = glm::dot(X, xUnit) * xUnit;
+	//const glm::vec3 Yprojy = glm::dot(Y, yUnit) * yUnit;
+	//const glm::vec3 Zprojz = glm::dot(Z, zUnit) * zUnit;
 
 	//Debug helper
 	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
 
-	return Ray{ intersectPoint, globalReflected };
+	return Ray{ intersectPoint, reflectedDirGlobal };
 }
 
 void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
@@ -324,7 +345,7 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 		bool intersected = rayIntersection(*currentRay);
 		if (!intersected)
 		{
-			std::cout << "A ray with no intersections detected\n";
+			//std::cout << "A ray with no intersections detected\n";
 			continue; // I think this is right...
 		}
 
@@ -346,7 +367,7 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 				float terminator = _rng(_gen);
 				if (terminator + _terminationProbability > 1.f) //Terminate ray
 				{
-					currentRay->setColor(currentIntersectObject->getColor() * (1.0 / _terminationProbability));
+					currentRay->setColor(currentRay->getColor() * (1.0 / _terminationProbability));
 				}
 				else
 				{
@@ -422,10 +443,10 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 						intersectData._normal);
 				Color rayColor = currentRay->getColor();
 				Color objColor = currentRay->getIntersectedObject().value()->getColor();
-				Color finalColor = objColor;
+				Color finalColor =  isMonteCarloTree ? rayColor : objColor;
 				return finalColor * roughness
 					* shadowRayContribution(intersectData._intersectPoint,
-						intersectData._normal);					
+						intersectData._normal);
 			}
 			else
 			{
@@ -448,7 +469,7 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 	return result;
 }
 
-void Scene::RayTree::attachReflected(const IntersectionData& intData, Ray* currentRay) const
+void Scene::RayTree::attachReflected(const IntersectionData& intData, Ray* currentRay)
 {
 	Ray reflectedRay = Scene::computeReflectedRay(
 		intData._normal,
@@ -460,6 +481,7 @@ void Scene::RayTree::attachReflected(const IntersectionData& intData, Ray* curre
 
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);
+	++_treeSize;
 }
 
 void Scene::RayTree::attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay)
@@ -473,9 +495,10 @@ void Scene::RayTree::attachReflectedMonteCarlo(const IntersectionData& intData, 
 
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);
+	++_treeSize;
 }
 
-void Scene::RayTree::attachRefracted(const IntersectionData& intData, Ray* currentRay) const
+void Scene::RayTree::attachRefracted(const IntersectionData& intData, Ray* currentRay)
 {
 	Ray refractedRay = Scene::computeRefractedRay(
 		intData._normal,
@@ -488,4 +511,5 @@ void Scene::RayTree::attachRefracted(const IntersectionData& intData, Ray* curre
 
 	currentRay->setRight(std::move(refractedRay));
 	currentRay->getRight()->setParent(currentRay);
+	++_treeSize;
 }
