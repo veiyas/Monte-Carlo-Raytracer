@@ -84,8 +84,10 @@ Scene::Scene()
 
 	//// Algots scene
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, -2.f, -1.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 8.f, 3.5f, -3.4f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, -2.5f, 1.f });
+	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, 3.5f, -3.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, -3.5f, -3.f, 1.f });
 	//_pointLights.emplace_back(Vertex(3, 0, 4, 1), Color(1, 1, 1));
 	//_pointLights.emplace_back(Vertex(0, 0, 1, 1), Color(1, 1, 1));
 	_pointLights.emplace_back(Vertex(2, 1, 4, 1), Color(1, 1, 1));
@@ -224,9 +226,6 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 		- glm::sqrt(sqrtExpression)
 	);
 
-	//// TODO Test this and decide
-	//refractDir = glm::refract(incomingRay.getNormalizedDirection(), normal, n1n2);
-
 	return Ray{ intersectionPoint, Vertex{ glm::vec3{ intersectionPoint } + refractDir, 1.0f } };
 }
 
@@ -253,6 +252,7 @@ void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const Inters
 	Ray firstRandomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
 	firstRandomReflectedRay.setParent(initialRay);
 	firstRandomReflectedRay.setColor(initialRay->getColor() * intersectObj->getColor());
+
 	RayTree monteCarloTree{ firstRandomReflectedRay };
 	monteCarloTree.raytracePixel(true);
 	
@@ -287,11 +287,12 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
 
 	//Generate random azimuth (phi) and inclination (theta)
-	float phi = TWO_PI * _rng(_gen);
-	float theta = glm::asin(glm::sqrt(_rng(_gen)));
-	const float x = glm::cos(phi) * glm::sin(theta); //are these local? RNG doesnt care about coordinate systems
+	const float phi = TWO_PI * _rng(_gen);
+	const float theta = glm::asin(glm::sqrt(_rng(_gen)));
+	const float x = glm::cos(phi) * glm::sin(theta);
 	const float y = glm::sin(phi) * glm::sin(theta);
 	const float z = glm::cos(theta);
+
 	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
 
 	//Debug helper
@@ -345,13 +346,20 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 			{
 				float terminator = _rng(_gen);
 				if (terminator + _terminationProbability > 1.f) //Terminate ray
-				{
 					currentRay->setColor(currentRay->getColor() * (1.0 / _terminationProbability));
-				}
 				else
 				{
 					attachReflectedMonteCarlo(currentIntersection, currentRay);
-					currentRay->getLeft()->setColor(currentRay->getColor() * currentIntersectObject->getColor());
+					const double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
+						currentRay->getLeft()->getNormalizedDirection(),
+						computeShadowRayDirection(currentIntersection._intersectPoint),
+						currentIntersection._normal);
+
+					currentRay->getLeft()->setColor(
+						currentRay->getColor()
+						* currentIntersectObject->getColor()
+						* roughness);
+
 					rays.push(currentRay->getLeft());
 					++rayTreeCounter;
 				}
@@ -414,16 +422,7 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 			if (currentRay->getIntersectionData().has_value())
 			{
 				auto& intersectData = currentRay->getIntersectionData().value();
-				auto& intersectObject = currentRay->getIntersectedObject().value();
-				const double roughness =
-					intersectObject->getBRDF().computeOrenNayar(
-						-currentRay->getNormalizedDirection(),
-						computeShadowRayDirection(intersectData._intersectPoint),
-						intersectData._normal);
-				Color rayColor = currentRay->getColor();
-				Color objColor = intersectObject->getColor();
-				Color finalColor = objColor;
-				auto returnValue = finalColor * roughness * rayColor
+				auto returnValue = currentRay->getColor()
 					* shadowRayContribution(intersectData._intersectPoint,
 						intersectData._normal);
 				return returnValue;
@@ -470,7 +469,6 @@ void Scene::RayTree::attachReflectedMonteCarlo(const IntersectionData& intData, 
 		intData._normal,
 		intData._intersectPoint);
 	reflectedRay.setInsideObject(currentRay->isInsideObject());
-	reflectedRay.setColor(Color(1.0, 1.0, 1.0));
 
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);

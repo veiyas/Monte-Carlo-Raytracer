@@ -11,8 +11,6 @@
 #include "brdf.hpp"
 #include "triangle.hpp"
 
-
-
 class SceneObject
 {
 public:
@@ -24,7 +22,7 @@ public:
 	Color getColor() const { return _color; }
 private:
 	const BRDF _brdf;
-	const Color _color;
+	Color _color;
 };
 
 
