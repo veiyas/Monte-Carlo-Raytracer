@@ -48,25 +48,27 @@ private:
 	{
 	public:
 		RayTree(Ray& initialRay);
-		void raytracePixel();
+		void raytracePixel(bool isMonteCarloTree);
 		Color getPixelColor() const { return _finalColor; }
 
 	private:
 		std::unique_ptr<Ray> _head;
 		Color _finalColor;
 		size_t _treeSize;
-		constexpr static size_t maxTreeSize = 512;		
+		constexpr static size_t _maxTreeSize = 512;		
 
-		// Random generator stuff for monte carlo
+		//Random generator stuff for monte carlo
+		constexpr static float _terminationProbability = 0.2f;
 		std::mt19937 _gen;
 		std::uniform_real_distribution<float> _rng;
-		void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection);
+		void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj);
 		Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint);
 
-		void constructRayTree();
-		Color traverseRayTree(Ray* input) const;
+		void constructRayTree(const bool& isMonteCarloTree);
+		Color traverseRayTree(Ray* input, bool isMonteCarloTree) const;
 
 		void attachReflected(const IntersectionData& intData, Ray* currentRay) const;
+		void attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay);
 		void attachRefracted(const IntersectionData& intData, Ray* currentRay) const;
 	};
 };

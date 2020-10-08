@@ -8,7 +8,6 @@
 
 #include "basic_types.hpp"
 
-
 class BRDF
 {
 public:
