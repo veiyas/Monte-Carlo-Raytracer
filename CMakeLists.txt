@@ -30,6 +30,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   src
   ext/glm
   ext/LodePNG
+  ext/kdtree++
 )
 #
 # Setting some compile settings for the project

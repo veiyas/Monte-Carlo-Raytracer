@@ -116,15 +116,14 @@ T* Scene::calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
 
 	for (size_t i{ 0 }; i < container.size(); ++i)
 	{
-		auto temp = container[i].rayIntersection(ray);
+		auto tempIntersection = container[i].rayIntersection(ray);
 		++_nCalculations;
-		// Did intersection occur, and is it closer than minT?
-		if (temp.has_value() && temp.value()._t < minT)
+		//Did intersection occur, and is it closer than minT?
+		if (tempIntersection.has_value() && tempIntersection.value()._t < minT)
 		{
-			closestIntersectData = temp;
-			//closestIntersectObject = &container[i];
+			closestIntersectData = tempIntersection;
 			intersectObject = &container[i];
-			minT = temp.value()._t;
+			minT = tempIntersection.value()._t;
 		}
 	}
 	return intersectObject;

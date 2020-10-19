@@ -10,6 +10,7 @@
 #include <functional>
 
 #include <glm/gtx/vector_angle.hpp>
+#include <kdtree.hpp>
 
 #include "basic_types.hpp"
 #include "shapes.hpp"
@@ -17,7 +18,7 @@
 
 #define TWO_PI 6.28318
 
-class Scene //Let's get static B) (This is now an implicit singleton)
+class Scene //This class became some sort of reverse singleton through poor preparation
 {
 public:
 	Scene();
