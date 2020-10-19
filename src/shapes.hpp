@@ -1,4 +1,5 @@
 #pragma once
+#define WHITE_COLOR Color(1.0, 1.0, 1.0)
 
 #include <vector>
 #include <iostream>
@@ -25,7 +26,6 @@ private:
 	Color _color;
 };
 
-
 class Tetrahedron : public SceneObject
 {
 public:
@@ -51,9 +51,19 @@ private:
 class TriangleObj : public SceneObject
 {
 public:
+	TriangleObj() = default;
 	TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Color color);
 	TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
 	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
 private:
 	const Triangle _basicTriangle;
+};
+
+class CeilingLight : public SceneObject
+{
+public:
+	CeilingLight(BRDF brdf, float xPos, float yPos);
+	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
+private:
+	std::vector<TriangleObj> _triangles;
 };

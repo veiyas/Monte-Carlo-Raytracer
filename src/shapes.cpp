@@ -143,3 +143,33 @@ std::optional<IntersectionData> TriangleObj::rayIntersection(Ray& arg) const
 		t
 	};
 }
+
+CeilingLight::CeilingLight(BRDF brdf, float xPos, float yPos)
+	: SceneObject(brdf, WHITE_COLOR)
+{
+	Vertex leftFar{ xPos + 0.5, yPos + 0.5f, 4.999f, 1.f };
+	Vertex leftClose{ xPos - 0.5, yPos + 0.5f, 4.999f, 1.f };
+	Vertex rightFar{ xPos + 0.5, yPos - 0.5f, 4.999f, 1.f };
+	Vertex rightClose{ xPos - 0.5, yPos - 0.5f, 4.999f, 1.f };
+	
+	TriangleObj t1{ brdf, leftClose, leftFar, rightFar, Direction(0, 0, -1), WHITE_COLOR };
+	TriangleObj t2{ brdf, leftClose, rightFar, rightClose, Direction(0, 0, -1), WHITE_COLOR };
+	_triangles.push_back(t1);
+	_triangles.push_back(t2);
+}
+
+std::optional<IntersectionData> CeilingLight::rayIntersection(Ray& arg) const
+{
+	//We know there are always 2 triangles in the ceiling light
+	auto intersection1 = _triangles[0].rayIntersection(arg);
+	auto intersection2 = _triangles[1].rayIntersection(arg);
+
+	if (intersection1 && !intersection2)
+		return intersection1;
+	else if (!intersection1 && intersection2)
+		return intersection2;
+	else
+		return intersection1->_t < intersection2->_t ? intersection1 : intersection2;
+
+	return {}; //No intersections
+}

@@ -7,6 +7,7 @@ std::vector<TriangleObj> Scene::_sceneTris;
 std::vector<Tetrahedron> Scene::_tetrahedrons;
 std::vector<Sphere> Scene::_spheres;
 std::vector<PointLight> Scene::_pointLights;
+std::vector<CeilingLight> Scene::_ceilingLights;
 long long unsigned Scene::_nCalculations = 0;
 
 Scene::Scene()
@@ -66,21 +67,8 @@ Scene::Scene()
 
 	}
 
-	// Tetrahedrons
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.80, 0.0, 0.80 }, Vertex{ 5.0f, 0.0f, 0.f, 1.0f });
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 0.8f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 3.0f, 0.0f, -1.0f, 1.0f });
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.0, 0.50, 0.94 }, Vertex{ 5.0f, -2.0f, -2.0f, 1.0f });
-	// Intersecting the walls
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 3.0f, Color{ 0.79, 0.0, 0.0 }, Vertex{ 13.0f, 0.0f, 0.0f, 1.0f });
-
-	//Spheres
-	//_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 6.f, 1.f, 0.f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 5.f, 2.f, -2.f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 4.5f, -0.9f, 1.2f, 1.f });
-
-	//Lights
-	//_pointLights.emplace_back(Vertex(1, -1, 1, 1), Color(1, 1, 1));
-	//_pointLights.emplace_back(Vertex(1, 0, 0, 1), Color(1, 1, 1)); // Centered
+	//Ceiling light
+	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 5.f, 0.f);
 
 	//// Algots scene
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
@@ -128,6 +116,18 @@ bool Scene::rayIntersection(Ray& ray)
 		{
 			closestIntersectData = temp;
 			closestIntersectObject = &tetrahedron;
+			minT = temp.value()._t;
+		}
+	}
+	
+	for (auto& ceilingLight : _ceilingLights)
+	{
+		auto temp = ceilingLight.rayIntersection(ray);
+		++_nCalculations;
+		if (temp.has_value() && temp.value()._t < minT)
+		{
+			closestIntersectData = temp;
+			closestIntersectObject = &ceilingLight;
 			minT = temp.value()._t;
 		}
 	}
@@ -325,14 +325,17 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 		bool intersected = rayIntersection(*currentRay);
 		if (!intersected)
 		{
-			std::cout << "A ray with no intersections detected\n";
-			continue; // I think this is right...
+			//std::cout << "A ray with no intersections detected\n";
+			continue;
 		}
 
 		const auto& currentIntersection = currentRay->getIntersectionData().value();
 		const auto& currentIntersectObject = currentRay->getIntersectedObject().value();
+		const auto& currentSurfaceType = currentIntersectObject->getBRDF().getSurfaceType();
 
-		if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::REFLECTOR)
+		if (currentSurfaceType == BRDF::LIGHT)
+			currentRay->setColor(Color(1.0, 1.0, 1.0));
+		else if (currentSurfaceType == BRDF::REFLECTOR)
 		{
 			// All importance is reflected
 			attachReflected(currentIntersection, currentRay);
@@ -340,7 +343,7 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
 		}
-		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::DIFFUSE)
+		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
 			if (isMonteCarloTree)
 			{
@@ -367,7 +370,7 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 			else
 				monteCarloDiffuseContribution(currentRay, currentIntersection, currentIntersectObject);
 		}
-		else if (currentIntersectObject->getBRDF().getSurfaceType() == BRDF::TRANSPARENT)
+		else if (currentSurfaceType == BRDF::TRANSPARENT)
 		{
 			float incAngle = glm::angle(-currentRay->getNormalizedDirection(), currentIntersection._normal);
 

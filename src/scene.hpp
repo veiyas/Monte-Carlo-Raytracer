@@ -28,6 +28,7 @@ private:
 	static std::vector<Tetrahedron> _tetrahedrons;
 	static std::vector<Sphere> _spheres;
 	static std::vector<PointLight> _pointLights;
+	static std::vector<CeilingLight> _ceilingLights;
 	static long long unsigned _nCalculations;
 
 	static constexpr float _ambientContribution = 0.2f;
