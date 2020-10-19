@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <queue>
 #include <random>
+#include <functional>
 
 #include <glm/gtx/vector_angle.hpp>
 
@@ -35,6 +36,11 @@ private:
 
 	// Checks for intersections and if so attaches intersection data to arg
 	static bool rayIntersection(Ray& arg);
+	//Helper method for rayIntersection
+	template<typename T>
+	static T* calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
+		std::optional<IntersectionData>& closestIntersectData, SceneObject* closestIntersectObject);
+
 	static double shadowRayContribution(const Vertex& point, const Direction& normal);
 	static bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal);
 	

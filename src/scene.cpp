@@ -91,58 +91,13 @@ Color Scene::raycastScene(Ray& initialRay)
 bool Scene::rayIntersection(Ray& ray)
 {
 	std::optional<IntersectionData> closestIntersectData{};
-	SceneObject* closestIntersectObject{};
+	SceneObject* closestIntersectObject = nullptr;
 	float minT = 1e+10;
 
-	//TODO put these in single loop
-	for (auto& triangle : _sceneTris)
-	{
-		auto temp = triangle.rayIntersection(ray);
-		++_nCalculations;
-		// Did intersection occur, and is it closer than minT?
-		if (temp.has_value() && temp.value()._t < minT)
-		{
-			closestIntersectData = temp;
-			closestIntersectObject = &triangle;
-			minT = temp.value()._t;
-		}
-	}
-
-	for (auto& tetrahedron : _tetrahedrons)
-	{
-		auto temp = tetrahedron.rayIntersection(ray);
-		++_nCalculations;
-		if (temp.has_value() && temp.value()._t < minT)
-		{
-			closestIntersectData = temp;
-			closestIntersectObject = &tetrahedron;
-			minT = temp.value()._t;
-		}
-	}
-	
-	for (auto& ceilingLight : _ceilingLights)
-	{
-		auto temp = ceilingLight.rayIntersection(ray);
-		++_nCalculations;
-		if (temp.has_value() && temp.value()._t < minT)
-		{
-			closestIntersectData = temp;
-			closestIntersectObject = &ceilingLight;
-			minT = temp.value()._t;
-		}
-	}
-
-	for (auto& sphere : _spheres)
-	{
-		auto temp = sphere.rayIntersection(ray);
-		++_nCalculations;
-		if (temp.has_value() && temp.value()._t < minT)
-		{
-			closestIntersectData = temp;
-			closestIntersectObject = &sphere;
-			minT = temp.value()._t;
-		}
-	}
+	closestIntersectObject = calcIntersections(_sceneTris, ray, minT, closestIntersectData, closestIntersectObject);
+	closestIntersectObject = calcIntersections(_tetrahedrons, ray, minT, closestIntersectData, closestIntersectObject);
+	closestIntersectObject = calcIntersections(_spheres, ray, minT, closestIntersectData, closestIntersectObject);
+	closestIntersectObject = calcIntersections(_ceilingLights, ray, minT, closestIntersectData, closestIntersectObject);
 
 	if (closestIntersectData.has_value())
 	{
@@ -151,6 +106,28 @@ bool Scene::rayIntersection(Ray& ray)
 		return true;
 	}
 	return false;
+}
+
+template<typename T>
+T* Scene::calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
+	std::optional<IntersectionData>& closestIntersectData, SceneObject* closestIntersectObject)
+{
+	T* intersectObject = static_cast<T*>(closestIntersectObject);
+
+	for (size_t i{ 0 }; i < container.size(); ++i)
+	{
+		auto temp = container[i].rayIntersection(ray);
+		++_nCalculations;
+		// Did intersection occur, and is it closer than minT?
+		if (temp.has_value() && temp.value()._t < minT)
+		{
+			closestIntersectData = temp;
+			//closestIntersectObject = &container[i];
+			intersectObject = &container[i];
+			minT = temp.value()._t;
+		}
+	}
+	return intersectObject;
 }
 
 double Scene::shadowRayContribution(const Vertex& point, const Direction& normal)
