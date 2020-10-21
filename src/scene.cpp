@@ -74,7 +74,7 @@ Scene::Scene()
 
 	std::cout << "done!\n";
 	_scene = SceneGeometry{ sceneTris, tetrahedrons, spheres, ceilingLights };
-	_photonMap = PhotonMap(_scene._ceilingLights);
+	_photonMap = PhotonMap(_scene);
 }
 
 Color Scene::raycastScene(Ray& initialRay)

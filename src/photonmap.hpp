@@ -1,10 +1,11 @@
 #include <iostream>
 #include <random>
+#include <queue>
 #include <kdtree.hpp>
 
-#include "basic_types.hpp"
+#include "brdf.hpp"
 #include "shapes.hpp"
-#include "ray.hpp"
+#include "raycastingfunctions.hpp"
 
 #define TWO_PI 6.28318
 
@@ -22,12 +23,17 @@ class PhotonMap
 {
 public:
 	PhotonMap() = default;
-	PhotonMap(std::vector<CeilingLight>& lights);
+	PhotonMap(const SceneGeometry& geometry);
 private:
 	KDTree::KDTree<3, PhotonNode> _map;
-
 	std::mt19937 _gen;
 	std::uniform_real_distribution<float> _rng;
+
+	void addShadowPhotons(
+		std::vector<IntersectionSurface>& inputData,
+		std::vector<PhotonNode>& photonMapData,
+		Direction photonDir
+	);
 
 	static constexpr size_t N_PHOTONS_TO_CAST = 1000000;
 };
