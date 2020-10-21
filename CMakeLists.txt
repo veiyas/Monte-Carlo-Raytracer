@@ -8,6 +8,7 @@ project("MCRaytracer")
 # Adding the source files here that are compiled for this project
 add_executable(${PROJECT_NAME}
   src/main.cpp
+  src/raycastingfunctions.hpp
   ext/LodePNG/lodepng.cpp
   src/basic_types.hpp
   src/basic_types.cpp

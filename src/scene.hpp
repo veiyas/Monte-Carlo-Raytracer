@@ -11,12 +11,10 @@
 
 #include <glm/gtx/vector_angle.hpp>
 
-#include "basic_types.hpp"
 #include "shapes.hpp"
 #include "lights.hpp"
 #include "photonmap.hpp"
-
-#define TWO_PI 6.28318
+#include "raycastingfunctions.hpp"
 
 class Scene //This class became some sort of reverse singleton through poor preparation
 {
@@ -26,30 +24,14 @@ public:
 	unsigned getNCalculations() const { return _nCalculations; }
 
 private:
-	static std::vector<TriangleObj> _sceneTris;
-	static std::vector<Tetrahedron> _tetrahedrons;
-	static std::vector<Sphere> _spheres;
+	static SceneGeometry _scene;
+	static PhotonMap _photonMap;
 	static std::vector<PointLight> _pointLights;
-	static std::vector<CeilingLight> _ceilingLights;
 	static long long unsigned _nCalculations;
 
 	static constexpr float _ambientContribution = 0.2f;
-
-	// Checks for intersections and if so attaches intersection data to arg
-	static bool rayIntersection(Ray& arg);
-	//Helper method for rayIntersection
-	template<typename T>
-	static T* calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
-		std::optional<IntersectionData>& closestIntersectData, SceneObject* closestIntersectObject);
-
 	static double shadowRayContribution(const Vertex& point, const Direction& normal);
 	static bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal);
-	
-	//TODO these things maybe fits better in RayTree
-	static constexpr float _airIndex = 1.f;
-	static constexpr float _glassIndex = 1.5f;
-	static Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint);
-	static Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
 	static Direction computeShadowRayDirection(const Vertex& point);
 
 	class RayTree

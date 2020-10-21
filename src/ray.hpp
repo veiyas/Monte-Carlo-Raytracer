@@ -1,10 +1,8 @@
 #pragma once
 
-#include "basic_types.hpp"
 #include "triangle.hpp"
 #include "brdf.hpp"
 #include "shapes.hpp"
-
 
 class Ray
 {

@@ -145,7 +145,7 @@ std::optional<IntersectionData> TriangleObj::rayIntersection(Ray& arg) const
 }
 
 CeilingLight::CeilingLight(BRDF brdf, float xPos, float yPos)
-	: SceneObject(brdf, WHITE_COLOR)
+	: SceneObject(brdf, WHITE_COLOR), _centerPoints{std::make_pair(xPos, yPos)}
 {
 	Vertex leftFar{ xPos + 0.5, yPos + 0.5f, 4.999f, 1.f };
 	Vertex leftClose{ xPos - 0.5, yPos + 0.5f, 4.999f, 1.f };

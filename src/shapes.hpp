@@ -65,6 +65,17 @@ class CeilingLight : public SceneObject
 public:
 	CeilingLight(BRDF brdf, float xPos, float yPos);
 	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
+
+	std::pair<float, float> getCenterPoints() const { return _centerPoints; }
 private:
 	std::vector<TriangleObj> _triangles;
+	std::pair<float, float> _centerPoints;
+};
+
+struct SceneGeometry
+{
+	std::vector<TriangleObj> _sceneTris;
+	std::vector<Tetrahedron> _tetrahedons;
+	std::vector<Sphere> _spheres;
+	std::vector<CeilingLight> _ceilingLights;
 };
