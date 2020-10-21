@@ -25,6 +25,8 @@ add_executable(${PROJECT_NAME}
   src/triangle.cpp
   src/ray.hpp
   src/ray.cpp
+  src/photonmap.hpp
+  src/photonmap.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
   src

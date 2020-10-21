@@ -1,9 +1,7 @@
 #include <iostream>
 
-#include "basic_types.hpp"
 #include "scene.hpp"
 #include "camera.hpp"
-#include "ray.hpp"
 
 int main()
 {
@@ -13,7 +11,6 @@ int main()
 
 	Scene testScene{};
 
-	//Camera testCamera{ false };
 	Camera testCamera{ false, 200 };
 	testCamera.render(testScene);
 	testCamera.createPNG();

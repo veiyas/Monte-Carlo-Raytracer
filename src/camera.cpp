@@ -18,7 +18,7 @@ void Camera::render(Scene& scene)
 	std::cout << "Start rendering...\n";
 	auto startTime = std::chrono::high_resolution_clock::now();
 
-	//Get number of usable cores if possible, otherwise just use 1 thread
+	//Get number of usable threads if possible, otherwise just use 1 thread
 	size_t numCores = std::thread::hardware_concurrency();
 	numCores = numCores == 0 ? 1 : numCores;
 

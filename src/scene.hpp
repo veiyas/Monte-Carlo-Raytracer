@@ -10,11 +10,11 @@
 #include <functional>
 
 #include <glm/gtx/vector_angle.hpp>
-#include <kdtree.hpp>
 
 #include "basic_types.hpp"
 #include "shapes.hpp"
 #include "lights.hpp"
+#include "photonmap.hpp"
 
 #define TWO_PI 6.28318
 
@@ -63,7 +63,7 @@ private:
 		std::unique_ptr<Ray> _head;
 		Color _finalColor;
 		size_t _treeSize;
-		constexpr static size_t _maxTreeSize = 512;		
+		constexpr static size_t _maxTreeSize = 512;
 
 		//Random generator stuff for monte carlo
 		constexpr static float _terminationProbability = 0.2f;
