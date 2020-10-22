@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <queue>
+#include <chrono>
 #include <kdtree.hpp>
 
 #include "brdf.hpp"
@@ -8,6 +9,8 @@
 #include "raycastingfunctions.hpp"
 
 #define TWO_PI 6.28318
+
+using Photon = Ray;
 
 struct PhotonNode
 {
@@ -34,6 +37,7 @@ private:
 		std::vector<PhotonNode>& photonMapData,
 		Direction photonDir
 	);
+	Ray generateRandomPhotonFromLight(const float x, const float y);
 
-	static constexpr size_t N_PHOTONS_TO_CAST = 1000000;
+	static constexpr size_t N_PHOTONS_TO_CAST = 10000;
 };
