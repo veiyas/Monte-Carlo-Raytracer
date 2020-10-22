@@ -11,6 +11,7 @@ public:
 	Ray(Vertex start, Vertex end, Color color);
 	Ray(Ray& ray);
 	Ray(Ray&& ray) = default;
+	Ray& operator=(Ray&&) = default;
 
 	void setLeft(Ray&& ray) { _left = std::make_unique<Ray>(ray); }
 	Ray* getLeft() { return  _left ? _left.get() : nullptr; }

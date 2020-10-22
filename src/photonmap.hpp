@@ -39,5 +39,5 @@ private:
 	);
 	Ray generateRandomPhotonFromLight(const float x, const float y);
 
-	static constexpr size_t N_PHOTONS_TO_CAST = 10000;
+	static constexpr size_t N_PHOTONS_TO_CAST = 1000;
 };

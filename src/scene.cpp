@@ -64,10 +64,10 @@ Scene::Scene()
 
 	//// Algots scene
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
-	spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, -2.5f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f });
-	spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, 3.5f, -3.f, 1.f });
-	spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, -3.5f, -3.f, 1.f });
+	//spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 9.f, 0.f, -2.5f, 1.f });
+	spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, 0.f, 1.f });
+	//spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, 3.5f, -3.f, 1.f });
+	//spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, -3.5f, -3.f, 1.f });
 	//_pointLights.emplace_back(Vertex(3, 0, 4, 1), Color(1, 1, 1));
 	//_pointLights.emplace_back(Vertex(0, 0, 1, 1), Color(1, 1, 1));
 	_pointLights.emplace_back(Vertex(2, 1, 4, 1), Color(1, 1, 1));
@@ -308,17 +308,9 @@ void Scene::RayTree::constructRayTree(const bool& isMonteCarloTree)
 			// How much of the incoming importance/radiance is reflected, between 0 and 1.
 			// The rest of the importance/radiance is transmitted.
 			double reflectionCoeff, n1, n2;
-
-			if (currentRay->isInsideObject())
-				n1 = _glassIndex, n2 = _airIndex;
-			else
-				n1 = _airIndex, n2 = _glassIndex;
-
-			float brewsterAngle = asin(_airIndex/_glassIndex); // In radians // TODO Store this somewhere!
-
-			if (currentRay->isInsideObject() && incAngle > brewsterAngle) // Total internal reflection
-				reflectionCoeff = 1.f;
-			else // Transmission occurs, Schlicks equation for radiance distribution
+			bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, *currentRay);
+			
+			if(rayIsTransmitted) // Transmission occurs, Schlicks equation for radiance distribution
 			{
 				double R0 = pow((n1 - n2) / (n1 + n2), 2);
 				reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
@@ -417,7 +409,6 @@ void Scene::RayTree::attachRefracted(const IntersectionData& intData, Ray* curre
 		currentRay->isInsideObject());
 
 	// If refracting the medium changes
-	refractedRay.setInsideObject(!currentRay->isInsideObject());
 
 	currentRay->setRight(std::move(refractedRay));
 	currentRay->getRight()->setParent(currentRay);

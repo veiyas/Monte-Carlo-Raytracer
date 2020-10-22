@@ -68,6 +68,8 @@ inline void calcIntersection(const std::vector<T>& objects, Ray& ray, std::vecto
 		}
 	}
 }
+
+//Fills intersections with data and sorts increasingly by distance from photon origin (AKA closest first)
 inline void photonIntersection(Ray& ray, const SceneGeometry& geometry, std::vector<IntersectionSurface>& intersections)
 {
 	calcIntersection(geometry._sceneTris, ray, intersections);
@@ -105,6 +107,30 @@ inline Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 		- glm::sqrt(sqrtExpression)
 		);
 
-	return Ray{ intersectionPoint, Vertex{ glm::vec3{ intersectionPoint } + refractDir, 1.0f } };
+	Ray result = Ray{ intersectionPoint, Vertex{ glm::vec3{ intersectionPoint } + refractDir, 1.0f } };
+	result.setInsideObject(!incomingRay.isInsideObject());
+
+	return result;
 }
 
+//Calculates n1, n2, reflectionCoeff and returns if ray is transmitted or not
+inline bool shouldRayTransmit(double& n1, double& n2, double& reflectionCoeff, float incAngle, Ray& currentRay)
+{
+	if (currentRay.isInsideObject())
+		n1 = _glassIndex, n2 = _airIndex;
+	else
+		n1 = _airIndex, n2 = _glassIndex;
+
+	float brewsterAngle = asin(_airIndex / _glassIndex); // In radians
+	if (currentRay.isInsideObject() && incAngle > brewsterAngle) // Total internal reflection
+	{
+		reflectionCoeff = 1.f;
+		return false;
+	}
+	else
+	{
+		double R0 = pow((n1 - n2) / (n1 + n2), 2);
+		reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
+		return true;
+	}
+}

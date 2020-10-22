@@ -12,31 +12,32 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 		const auto lightCenterPoints = light.getCenterPoints();
 		const float xCenter = lightCenterPoints.first - 0.5f;
 		const float yCenter = lightCenterPoints.second - 0.5f;
-
 		std::vector<PhotonNode> photonData;
-		photonData.reserve(N_PHOTONS_TO_CAST);
+		photonData.reserve(N_PHOTONS_TO_CAST*10u);
 
 		for (size_t i = 0; i < N_PHOTONS_TO_CAST; i++)
 		{			
-			std::queue<Ray*> photonQueue;
-			Photon initialPhoton = generateRandomPhotonFromLight(xCenter, yCenter);
-			photonQueue.push(&initialPhoton);
+			std::queue<Ray> photonQueue;
 
-			Photon* currentPhoton = nullptr;
+			Photon initialPhoton = generateRandomPhotonFromLight(xCenter, yCenter);
+			photonQueue.push(std::move(initialPhoton));
+
 			while(!photonQueue.empty())
 			{
 				std::vector<IntersectionSurface> photonIntersections;
-				currentPhoton = photonQueue.front();
+				Photon currentPhoton = std::move(photonQueue.front());
 				photonQueue.pop();
 
-				photonIntersection(*currentPhoton, geometry, photonIntersections);
+				photonIntersection(currentPhoton, geometry, photonIntersections);
 
 				//One intersection, should only happen with diffuse surfaces
 				if (photonIntersections.size() == 1 && photonIntersections[0].second == BRDF::DIFFUSE)
+				{
 					photonData.push_back(PhotonNode{
 							photonIntersections[0].first._intersectPoint,
-							currentPhoton->getNormalizedDirection(),
+							currentPhoton.getNormalizedDirection(),
 							false });
+				}
 				else if (photonIntersections.size() > 1) //Multiple intersections
 				{
 					//First hit is diffuse
@@ -44,34 +45,50 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 					{
 						photonData.push_back(PhotonNode{
 							photonIntersections[0].first._intersectPoint,
-							currentPhoton->getNormalizedDirection(),
+							currentPhoton.getNormalizedDirection(),
 							false });
 
-						addShadowPhotons(photonIntersections, photonData, currentPhoton->getNormalizedDirection());
+						addShadowPhotons(photonIntersections, photonData, currentPhoton.getNormalizedDirection());
+
 						//Do monte carlo stuff ...
 					}
 					else if (photonIntersections[0].second == BRDF::REFLECTOR)
 					{
 						//Compute refracted photon and add to queue
 						const IntersectionData tempInter = photonIntersections[0].first;
-						Ray reflectedPhoton = computeReflectedRay(tempInter._normal, *currentPhoton, tempInter._intersectPoint);
-						photonQueue.push(&reflectedPhoton);
+						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentPhoton, tempInter._intersectPoint);
+						photonQueue.push(std::move(reflectedPhoton));
 
-						addShadowPhotons(photonIntersections, photonData, currentPhoton->getNormalizedDirection());
+						addShadowPhotons(photonIntersections, photonData, currentPhoton.getNormalizedDirection());
 					}
 					else if (photonIntersections[0].second == BRDF::TRANSPARENT)
 					{
+						const IntersectionData tempInter = photonIntersections[0].first;
+						float incAngle = glm::angle(-currentPhoton.getNormalizedDirection(), photonIntersections[0].first._normal);
+						double reflectionCoeff, n1, n2;
+						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentPhoton);
 
+						//I don't know if we should use reflectionCoeff somehow here
+						if (rayIsTransmitted)
+						{
+							//Photon refractedPhoton = computeRefractedRay(
+							//	tempInter._normal, currentPhoton, tempInter._intersectPoint, currentPhoton.isInsideObject());
+
+							//THIS CREATES AN INFINITE LOOP for some reason
+							//photonQueue.push(std::move(refractedPhoton));
+						}
+						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentPhoton, tempInter._intersectPoint);
+						photonQueue.push(std::move(reflectedPhoton));
 					}
 				}
 			}
-		}		
-		//Insert photons into k-d tree with automatic balancing
+		}
 		_map.efficient_replace_and_optimise(photonData);
 	}
 	auto endTime = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> duration = endTime - startTime;
-	std::cout << "done!\nPhoton with of size " << _map.size() << " constructed in " << duration.count() << " seconds.\n\n";
+	std::cout << "done!\nPhoton map with " << _map.size() << " photons constructed in " << duration.count() << " seconds.\n"
+		<< static_cast<long long int>(_map.size() - N_PHOTONS_TO_CAST) << " extra photons were created from specular surfaces.\n\n";
 }
 
 void PhotonMap::addShadowPhotons(
