@@ -56,6 +56,7 @@ public:
 	TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Color color);
 	TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Direction normal, Color color);
 	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
+	Direction getNormal() const { return _basicTriangle.getNormal(); }
 private:
 	const Triangle _basicTriangle;
 };
@@ -65,6 +66,13 @@ class CeilingLight : public SceneObject
 public:
 	CeilingLight(BRDF brdf, float xPos, float yPos);
 	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
+	Direction getNormal() const { return _triangles[0].getNormal(); }
+
+	// Cache corner points for use with shadow rays
+	const Vertex leftFar;
+	const Vertex leftClose;
+	const Vertex rightFar;
+	const Vertex rightClose;
 private:
 	std::vector<TriangleObj> _triangles;
 };

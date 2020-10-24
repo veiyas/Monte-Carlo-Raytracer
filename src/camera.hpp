@@ -14,7 +14,8 @@ public:
 	Camera(bool eyePoint = false, int resolution = 800);
 
 	void render(Scene& scene);
-	void createPNG();
+	void sqrtAllPixels();
+	void createPNG(const std::string& file);
 
 private:
 	const Vertex _eyePoint1{ -2.0f, 0.0f, 0.0f, 1.0f };
@@ -28,7 +29,7 @@ private:
 	const int HEIGHT;
 	const float pixelSideLength;
 
-	static constexpr int _numOfRaysSentFromEachPixel = 200;
+	static constexpr int _numOfRaysSentFromEachPixel = 10;
 	
 	using PixelGrid = std::vector<std::vector<Pixel>>;
 	PixelGrid _pixels{ HEIGHT, std::vector<Pixel>(WIDTH) };

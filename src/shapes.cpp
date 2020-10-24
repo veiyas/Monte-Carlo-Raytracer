@@ -54,7 +54,6 @@ std::optional<IntersectionData> Tetrahedron::rayIntersection(Ray& ray) const
 			minT
 		};
 	}
-
 	return {};
 }
 
@@ -65,7 +64,6 @@ Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position)
 
 }
 
-static constexpr double EPSILON = 1e-4;
 std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 {
 	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
@@ -83,16 +81,16 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 
 	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
 
-	if (expressionInSQRT < -EPSILON) //No intersections
+	if (expressionInSQRT < -0) //No intersections
 		return {};
-	else if (expressionInSQRT > -EPSILON && expressionInSQRT < EPSILON) //One intersection
+	else if (expressionInSQRT > -0 && expressionInSQRT < 0) //One intersection
 		d = (-b) / 2;
 	else // Two intersections
 	{
 		// Pick the intersection that is closest to the starting point of the ray, while givning a positive d
 		d = ((-b) / 2) - glm::sqrt(expressionInSQRT);
 		float otherPossibleD = ((-b) / 2) + glm::sqrt(expressionInSQRT);
-		if (d < EPSILON && otherPossibleD > EPSILON) // The intersecting ray is coming from inside the object
+		if (d < 0 && otherPossibleD > 0) // The intersecting ray is coming from inside the object
 		{
 			d = otherPossibleD;
 			isInside = true;
@@ -112,7 +110,7 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 
 	//std::cout << rayEnd.x + rayDirectionNormalized.x*d << "\n";
 
-	if (d < EPSILON) // Intersection located behind the object
+	if (d < 0) // Intersection located behind the object
 		return {};
 
 	return IntersectionData{
@@ -145,13 +143,12 @@ std::optional<IntersectionData> TriangleObj::rayIntersection(Ray& arg) const
 }
 
 CeilingLight::CeilingLight(BRDF brdf, float xPos, float yPos)
-	: SceneObject(brdf, WHITE_COLOR)
+	: SceneObject(brdf, WHITE_COLOR),
+	  leftFar{ xPos + 0.5, yPos + 0.5f, 4.999f, 1.f },
+	  leftClose{ xPos - 0.5, yPos + 0.5f, 4.999f, 1.f },
+	  rightFar{ xPos + 0.5, yPos - 0.5f, 4.999f, 1.f },
+	  rightClose{ xPos - 0.5, yPos - 0.5f, 4.999f, 1.f }
 {
-	Vertex leftFar{ xPos + 0.5, yPos + 0.5f, 4.999f, 1.f };
-	Vertex leftClose{ xPos - 0.5, yPos + 0.5f, 4.999f, 1.f };
-	Vertex rightFar{ xPos + 0.5, yPos - 0.5f, 4.999f, 1.f };
-	Vertex rightClose{ xPos - 0.5, yPos - 0.5f, 4.999f, 1.f };
-	
 	TriangleObj t1{ brdf, leftClose, leftFar, rightFar, Direction(0, 0, -1), WHITE_COLOR };
 	TriangleObj t2{ brdf, leftClose, rightFar, rightClose, Direction(0, 0, -1), WHITE_COLOR };
 	_triangles.push_back(t1);

@@ -74,13 +74,25 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 			_pixels[row][col]._color += scene.raycastScene(*ray);
 		}
 
+		_pixels[row][col]._color /= _numOfRaysSentFromEachPixel;
 	}
 }
 
-void Camera::createPNG()
+void Camera::sqrtAllPixels()
 {
-	std::string filename = "output.png";
+	for (size_t row = 0; row < HEIGHT; ++row)
+	{
+		for (size_t col = 0; col < WIDTH; ++col)
+		{
+			_pixels[row][col]._color.r = sqrt(_pixels[row][col]._color.r);
+			_pixels[row][col]._color.g = sqrt(_pixels[row][col]._color.g);
+			_pixels[row][col]._color.b = sqrt(_pixels[row][col]._color.b);
+		}
+	}
+}
 
+void Camera::createPNG(const std::string& file)
+{
 	double maxIntensity = 0.0f;
 	for (size_t row = 0; row < HEIGHT; ++row)
 	{
@@ -115,7 +127,7 @@ void Camera::createPNG()
 		}
 	}
 
-	unsigned error = lodepng::encode(filename, image, WIDTH, HEIGHT);
+	unsigned error = lodepng::encode(file, image, WIDTH, HEIGHT);
 	if (error) std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
 	else
 		std::cout << "Done!\n";

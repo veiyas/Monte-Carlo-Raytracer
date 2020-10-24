@@ -16,8 +16,6 @@
 #include "shapes.hpp"
 #include "lights.hpp"
 
-#define TWO_PI 6.28318
-
 class Scene //This class became some sort of reverse singleton through poor preparation
 {
 public:
@@ -33,7 +31,13 @@ private:
 	static std::vector<CeilingLight> _ceilingLights;
 	static long long unsigned _nCalculations;
 
-	static constexpr float _ambientContribution = 0.2f;
+	static constexpr int _numShadowRaysPerIntersection = 2;
+	// How much reflected (and alos refracted) rays starting point is offset from
+	// intersection along normal
+	static constexpr float _reflectionOffset = 0.0001;
+
+	static std::mt19937 _gen;
+	static std::uniform_real_distribution<float> _rng;
 
 	// Checks for intersections and if so attaches intersection data to arg
 	static bool rayIntersection(Ray& arg);
@@ -42,13 +46,16 @@ private:
 	static T* calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
 		std::optional<IntersectionData>& closestIntersectData, SceneObject* closestIntersectObject);
 
+	static Color localAreaLightContribution(const Ray& inc, const Vertex& point,
+	                                        const Direction& normal, const SceneObject* obj);
+	static bool pathIsVisible(Ray& ray, const Direction& normal);
 	static double shadowRayContribution(const Vertex& point, const Direction& normal);
 	static bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal);
 	
 	//TODO these things maybe fits better in RayTree
 	static constexpr float _airIndex = 1.f;
 	static constexpr float _glassIndex = 1.5f;
-	static Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint);
+	static Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
 	static Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
 	static Direction computeShadowRayDirection(const Vertex& point);
 
@@ -69,14 +76,16 @@ private:
 		constexpr static float _terminationProbability = 0.2f;
 		std::mt19937 _gen;
 		std::uniform_real_distribution<float> _rng;
-		void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj);
-		Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint);
+		//void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj);
+		Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal,
+		                               const Vertex& intersectPoint, float rand1, float rand2);
 
-		void constructRayTree(const bool& isMonteCarloTree);
+		void constructRayTree(bool isMonteCarloTree);
 		Color traverseRayTree(Ray* input, bool isMonteCarloTree) const;
 
 		void attachReflected(const IntersectionData& intData, Ray* currentRay) const;
-		void attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay);
+		// Note: rand1 is the same value that is used for ray termination!
+		void attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay, float rand1, float rand2);
 		void attachRefracted(const IntersectionData& intData, Ray* currentRay) const;
 	};
 };

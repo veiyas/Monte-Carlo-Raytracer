@@ -14,7 +14,11 @@ public:
 	Ray(Ray& ray);
 	Ray(Ray&& ray) = default;
 
-	void setLeft(Ray&& ray) { _left = std::make_unique<Ray>(ray); }
+	void setLeft(Ray&& ray) {
+		if (_intersectionData.has_value() == false)
+			std::cout << "ohh noo\n";
+		_left = std::make_unique<Ray>(ray);
+	}
 	Ray* getLeft() { return  _left ? _left.get() : nullptr; }
 	void setRight(Ray&& ray) { _right = std::make_unique<Ray>(ray); }
 	Ray* getRight() { return _right ? _right.get() : nullptr; }

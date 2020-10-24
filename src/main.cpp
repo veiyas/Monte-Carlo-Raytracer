@@ -1,4 +1,6 @@
 #include <iostream>
+#include <chrono>
+#include <ctime>   
 
 #include "basic_types.hpp"
 #include "scene.hpp"
@@ -16,7 +18,16 @@ int main()
 	//Camera testCamera{ false };
 	Camera testCamera{ false, 200 };
 	testCamera.render(testScene);
-	testCamera.createPNG();
+
+	testCamera.sqrtAllPixels();
+
+	testCamera.createPNG("output.png");
+
+	// Save under unique name as well, to document progress
+	auto unixTime = std::chrono::duration_cast<std::chrono::seconds>(
+		std::chrono::system_clock::now().time_since_epoch()).count();
+	std::string filename = "Renders/MC_" + std::to_string(unixTime) + ".png";
+	testCamera.createPNG(filename);
 
 	return 0;
 }
