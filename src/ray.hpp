@@ -28,7 +28,7 @@ public:
 	bool isInsideObject() const { return _isInsideObject; }
 
 	// The color member is used to store importance when casting from camera
-	Color getColor() const { return _rayColor; } //TODO Make this include BRDF contib.
+	Color getColor() const { return _rayColor; }
 	void setColor(const Color color) { _rayColor = color; }
 
 	// Maybe this could be optimized...

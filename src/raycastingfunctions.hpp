@@ -6,8 +6,10 @@ using IntersectionSurface = std::pair<IntersectionData, unsigned>;
 /************************
 	  Declarations
 ************************/
+static constexpr float TWO_PI = 6.28318f;
 static constexpr float _airIndex = 1.f;
 static constexpr float _glassIndex = 1.5f;
+constexpr static float _terminationProbability = 0.2f;
 
 /************************
 	Implementations
@@ -133,4 +135,50 @@ inline bool shouldRayTransmit(double& n1, double& n2, double& reflectionCoeff, f
 		reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
 		return true;
 	}
+}
+
+inline Ray generateRandomReflectedRay(
+	const Direction& initialDirection,
+	const Direction& normal,
+	const Vertex& intersectPoint,
+	float randomAzim,
+	float randomIncl)
+{
+	//Determine local coordinate system and transformations matrices for it
+	const glm::vec3 Z{ normal };
+	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
+	const glm::vec3 Y = glm::cross(-X, Z);
+	/* GLM: Column major order
+	 0  4  8  12
+	 1  5  9  13
+	 2  6 10  14
+	 3  7 11  15
+	*/
+	const glm::mat4 toLocalCoord =
+		glm::mat4{
+		X.x, Y.x, Z.x, 0.f,
+		X.y, Y.y, Z.y, 0.f,
+		X.z, Y.z, Z.z, 0.f,
+		0.f, 0.f, 0.f, 1.f } *
+		glm::mat4{
+		1.f, 0.f, 0.f, 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		-intersectPoint.x, -intersectPoint.y, -intersectPoint.z, 1.f
+	};
+	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
+
+	//Generate random azimuth (phi) and inclination (theta)
+	const float phi = TWO_PI * randomAzim;
+	const float theta = glm::asin(glm::sqrt(randomIncl));
+	const float x = glm::cos(phi) * glm::sin(theta);
+	const float y = glm::sin(phi) * glm::sin(theta);
+	const float z = glm::cos(theta);
+
+	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
+
+	//Debug helper
+	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
+
+	return Ray{ intersectPoint, globalReflected };
 }

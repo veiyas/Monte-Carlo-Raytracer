@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 Ray::Ray(Vertex start, Vertex end)
+	: _rayColor{ Color{ 1.0, 1.0, 1.0 } }
 {
 	_start = std::make_unique<Vertex>(start);
 	_end = std::make_unique<Vertex>(end);
