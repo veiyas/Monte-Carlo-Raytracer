@@ -31,7 +31,7 @@ private:
 	static std::vector<CeilingLight> _ceilingLights;
 	static long long unsigned _nCalculations;
 
-	static constexpr int _numShadowRaysPerIntersection = 2;
+	static constexpr int _numShadowRaysPerIntersection = 1;
 	// How much reflected (and alos refracted) rays starting point is offset from
 	// intersection along normal
 	static constexpr float _reflectionOffset = 0.0001;

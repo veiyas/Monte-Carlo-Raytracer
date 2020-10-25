@@ -32,3 +32,7 @@ struct IntersectionData
 	Direction _normal;
 	float _t;
 };
+
+// Returns elementwise num/den, unless a component of den is 0
+// in which case it returns 0
+Color safeDivide(const Color& num, const Color& den);
