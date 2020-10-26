@@ -1,15 +1,17 @@
 #pragma once
 
 #include "ray.hpp"
+#include "scenegeometry.hpp"
 
 using IntersectionSurface = std::pair<IntersectionData, unsigned>;
 /************************
 	  Declarations
 ************************/
+static constexpr float PI = 3.1415f;
 static constexpr float TWO_PI = 6.28318f;
 static constexpr float _airIndex = 1.f;
 static constexpr float _glassIndex = 1.5f;
-constexpr static float _terminationProbability = 0.2f;
+static constexpr float _terminationProbability = 0.2f;
 
 /************************
 	Implementations
@@ -137,15 +139,24 @@ inline bool shouldRayTransmit(double& n1, double& n2, double& reflectionCoeff, f
 	}
 }
 
+inline float randAzimuth(std::mt19937& _gen, std::uniform_real_distribution<float>& _rng)
+{
+	return TWO_PI * _rng(_gen);
+}
+inline float randInclination(std::mt19937& _gen, std::uniform_real_distribution<float>& _rng)
+{
+	return glm::asin(glm::sqrt(_rng(_gen)));
+}
+
 inline Ray generateRandomReflectedRay(
 	const Direction& initialDirection,
 	const Direction& normal,
 	const Vertex& intersectPoint,
-	float randomAzim,
-	float randomIncl)
+	std::mt19937& _gen,
+	std::uniform_real_distribution<float>& _rng)
 {
 	//Determine local coordinate system and transformations matrices for it
-	const glm::vec3 Z{ normal };
+	glm::vec3 Z{ normal };
 	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
 	const glm::vec3 Y = glm::cross(-X, Z);
 	/* GLM: Column major order
@@ -169,16 +180,72 @@ inline Ray generateRandomReflectedRay(
 	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
 
 	//Generate random azimuth (phi) and inclination (theta)
-	const float phi = TWO_PI * randomAzim;
-	const float theta = glm::asin(glm::sqrt(randomIncl));
-	const float x = glm::cos(phi) * glm::sin(theta);
-	const float y = glm::sin(phi) * glm::sin(theta);
-	const float z = glm::cos(theta);
+	const float x = glm::cos(randAzimuth(_gen, _rng)) * glm::sin(randInclination(_gen, _rng));
+	const float y = glm::sin(randAzimuth(_gen, _rng)) * glm::sin(randInclination(_gen, _rng));
+	const float z = glm::cos(randInclination(_gen, _rng));
+
+	//OK So this works...
+	Z = glm::rotateX(Z, randInclination(_gen, _rng));
+	//Z = glm::rotateY(Z, randInclination(_gen, _rng));
+	Z = glm::rotateZ(Z, randAzimuth(_gen, _rng));
 
 	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
 
 	//Debug helper
 	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
 
-	return Ray{ intersectPoint, globalReflected };
+	//return Ray{ intersectPoint, globalReflected };
+	return Ray{ intersectPoint, glm::vec4(glm::normalize(Z), 1.f) };
+}
+
+inline Direction computeShadowRayDirection(const Vertex& point, const Vertex& lightPoint)
+{
+	return glm::normalize(glm::vec3(lightPoint) - glm::vec3(point));
+}
+
+inline bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal)
+{
+	return !(
+		input.has_value() // Intersection must exist
+		// Check if intersection is on the right side of the light (maybe this could be improved performance-wise?)
+		&& glm::length(glm::vec3(ray.getEnd() - ray.getStart())) > glm::length(input->_t * ray.getNormalizedDirection())
+		&& obj.getBRDF().getSurfaceType() != BRDF::TRANSPARENT
+		);
+}
+
+inline double shadowRayContribution(const Vertex& point, const Vertex& lightPoint, const Direction& normal, SceneGeometry& scene)
+{
+	double lightContribution = 0.f;
+
+	bool visible = true;
+	Direction shadowRayVec = glm::normalize(glm::vec3(lightPoint) - glm::vec3(point));
+	float normalDotContribution = glm::dot(shadowRayVec, normal);
+
+	if (normalDotContribution <= 0) //Angle between normal and lightvec >= 90 deg
+		return 0.0;
+	else
+	{
+		Ray shadowRay{ point, lightPoint };
+
+		auto itTetra = scene._tetrahedons.begin();
+		auto itSphere = scene._spheres.begin();
+
+		//This loop is ugly but efficient
+		while ((itTetra != scene._tetrahedons.end() || itSphere != scene._spheres.end()) && visible)
+		{
+			if (itTetra != scene._tetrahedons.end() && visible)
+			{
+				visible = objectIsVisible(shadowRay, *itTetra, itTetra->rayIntersection(shadowRay), normal);
+				++itTetra;
+			}
+			if (itSphere != scene._spheres.end() && visible)
+			{
+				visible = objectIsVisible(shadowRay, *itSphere, itSphere->rayIntersection(shadowRay), normal);
+				++itSphere;
+			}
+		}
+	}
+	lightContribution += normalDotContribution * visible;
+
+	return lightContribution;
 }

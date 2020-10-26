@@ -24,60 +24,54 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 
 			while(!photonQueue.empty())
 			{
-				std::vector<IntersectionSurface> photonIntersections;
-				Photon currentPhoton = std::move(photonQueue.front());
+				std::vector<IntersectionSurface> pIntersects;
+				Photon currentP = std::move(photonQueue.front());
 				photonQueue.pop();
 
-				photonIntersection(currentPhoton, geometry, photonIntersections);
+				photonIntersection(currentP, geometry, pIntersects);
 
 				//One intersection, should only happen with diffuse surfaces
-				if (photonIntersections.size() == 1 && photonIntersections[0].second == BRDF::DIFFUSE)
-				{
-					photonData.push_back(PhotonNode{
-							photonIntersections[0].first._intersectPoint,
-							_deltaFlux * static_cast<float>(currentPhoton.getColor().x),
-							currentPhoton.getNormalizedDirection() });
-					handleMonteCarloPhoton(photonQueue, photonIntersections[0].first, currentPhoton);
+				if (pIntersects.size() == 1 && pIntersects[0].second == BRDF::DIFFUSE)
+				{					
+					float pFlux = _deltaFlux * static_cast<float>(currentP.getColor().x);
+					addPhoton(PhotonNode{pIntersects[0].first._intersectPoint, pFlux, currentP.getNormalizedDirection() },
+						photonData);
+					handleMonteCarloPhoton(photonQueue, pIntersects[0].first, currentP);
 				}
-				else if (photonIntersections.size() > 1) //Multiple intersections
-				{
-					//First hit is diffuse
-					if (photonIntersections[0].second == BRDF::DIFFUSE)
+				else if (pIntersects.size() > 1) //Multiple intersections
+				{					
+					if (pIntersects[0].second == BRDF::DIFFUSE)
 					{
-						photonData.push_back(PhotonNode{
-							photonIntersections[0].first._intersectPoint,
-							_deltaFlux * static_cast<float>(currentPhoton.getColor().x),
-							currentPhoton.getNormalizedDirection()});
-
-						addShadowPhotons(photonIntersections);
-						handleMonteCarloPhoton(photonQueue, photonIntersections[0].first, currentPhoton);
+						float pFlux = _deltaFlux * static_cast<float>(currentP.getColor().x);
+						addPhoton(PhotonNode{ pIntersects[0].first._intersectPoint, pFlux, currentP.getNormalizedDirection() },
+							photonData);
+						handleMonteCarloPhoton(photonQueue, pIntersects[0].first, currentP);
+						addShadowPhotons(pIntersects);
 					}
-					else if (photonIntersections[0].second == BRDF::REFLECTOR)
+					else if (pIntersects[0].second == BRDF::REFLECTOR)
 					{
-						//Compute refracted photon and add to queue
-						const IntersectionData tempInter = photonIntersections[0].first;
-						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentPhoton, tempInter._intersectPoint);
+						const IntersectionData tempInter = pIntersects[0].first;
+						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
 						photonQueue.push(std::move(reflectedPhoton));
 
-						addShadowPhotons(photonIntersections);
+						addShadowPhotons(pIntersects);
 					}
-					else if (photonIntersections[0].second == BRDF::TRANSPARENT)
+					else if (pIntersects[0].second == BRDF::TRANSPARENT)
 					{
-						const IntersectionData tempInter = photonIntersections[0].first;
-						float incAngle = glm::angle(-currentPhoton.getNormalizedDirection(), photonIntersections[0].first._normal);
+						const IntersectionData tempInter = pIntersects[0].first;
+						float incAngle = glm::angle(-currentP.getNormalizedDirection(), pIntersects[0].first._normal);
 						double reflectionCoeff, n1, n2;
-						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentPhoton);
+						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
 
 						if (rayIsTransmitted)
 						{
 							Photon refractedPhoton = computeRefractedRay(
-								tempInter._normal, currentPhoton, tempInter._intersectPoint, currentPhoton.isInsideObject());
+								tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
 							refractedPhoton.setColor(refractedPhoton.getColor() * (1.f - reflectionCoeff));
 
-							//THIS CREATES AN INFINITE LOOP for some reason
-							//photonQueue.push(std::move(refractedPhoton));
+							photonQueue.push(std::move(refractedPhoton));
 						}
-						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentPhoton, tempInter._intersectPoint);
+						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
 						reflectedPhoton.setColor(reflectedPhoton.getColor() * reflectionCoeff);
 						photonQueue.push(std::move(reflectedPhoton));
 					}
@@ -89,7 +83,7 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 	auto endTime = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> duration = endTime - startTime;
 	std::cout << "done!\nPhoton map with " << _photonMap.size() << " photons constructed in " << duration.count() << " seconds.\n"
-		<< static_cast<long long int>(_photonMap.size() - N_PHOTONS_TO_CAST) << " extra photons were created from specular surfaces.\n\n";
+		<< static_cast<long long int>(_photonMap.size() - N_PHOTONS_TO_CAST) << " extra photons were created from monte carlo technique and specular surfaces.\n\n";
 }
 
 void PhotonMap::getPhotons(std::vector<PhotonNode>& foundPhotons, const PhotonNode& searchPoint)
@@ -97,13 +91,30 @@ void PhotonMap::getPhotons(std::vector<PhotonNode>& foundPhotons, const PhotonNo
 	_photonMap.find_within_range(searchPoint, SEARCH_RANGE, std::back_inserter(foundPhotons));
 }
 
-bool PhotonMap::shadowPhotonsPresent(const PhotonNode& searchPoint)
+bool PhotonMap::areShadowPhotonsPresent(const Vertex& intersectionPoint)
 {
-	return _shadowPhotonMap.count_within_range(searchPoint, SEARCH_RANGE) > 0 ? true : false;
+	PhotonNode p{ intersectionPoint };
+	return _shadowPhotonMap.count_within_range(p, SEARCH_RANGE) > 0 ? true : false;
+}
+
+double PhotonMap::getPhotonFlux(const Vertex& intersectionPoint)
+{
+	PhotonNode searchPosition{ intersectionPoint };
+	std::vector<PhotonNode> photons;
+	photons.reserve(5u * N_PHOTONS_TO_CAST / 1000u);
+	getPhotons(photons, searchPosition);
+
+	double photonContrib{};
+	for (const auto& p : photons)
+		photonContrib += p.flux;
+	photonContrib /= (PI * glm::pow(PhotonMap::SEARCH_RANGE, 2.0));
+
+	return photonContrib;	
 }
 
 void PhotonMap::addShadowPhotons(std::vector<IntersectionSurface>& inputData)
 {
+	std::lock_guard<std::mutex> tempLock{ this->_mutex };
 	for (size_t i = 1; i < inputData.size(); i++)
 	{
 		auto tempInter = inputData[i].first;
@@ -111,17 +122,21 @@ void PhotonMap::addShadowPhotons(std::vector<IntersectionSurface>& inputData)
 	}
 }
 
+void PhotonMap::addPhoton(PhotonNode&& currentPhoton, std::vector<PhotonNode>& photonData)
+{
+	std::lock_guard<std::mutex> tempLock{ this->_mutex };
+	photonData.push_back(std::move(currentPhoton));
+}
+
 Ray PhotonMap::generateRandomPhotonFromLight(const float x, const float y)
 {
-	const Vertex randPointOnLight{ x + _rng(_gen), y + _rng(_gen), 5.f, 1.f };
-	const float randAzim = TWO_PI * _rng(_gen);
-	const float randIncl = TWO_PI / 4.f * _rng(_gen);
-	const Vertex randEndPoint{
-		randPointOnLight.x + glm::cos(randAzim) * glm::sin(randIncl),
-		randPointOnLight.y + glm::sin(randAzim) * glm::sin(randIncl),
-		randPointOnLight.z - glm::cos(randIncl),
-		1.f
-	};
+	const Vertex randPointOnLight{ x + _rng(_gen), y + _rng(_gen), 4.999f, 1.f };
+	Direction randDir{ 0.f, 0.f, 1.f };
+	randDir = glm::rotateY(randDir, randInclination(_gen, _rng));
+	randDir = glm::rotateZ(randDir, randAzimuth(_gen, _rng));
+
+	const Vertex randEndPoint = randPointOnLight - glm::vec4(randDir, 0.f);
+
 	return Ray{ randPointOnLight, randEndPoint };
 }
 
@@ -143,8 +158,8 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData&
 			currentPhoton.getNormalizedDirection(),
 			inter._normal,
 			inter._intersectPoint,
-			_rng(_gen),
-			_rng(_gen));
+			_gen,
+			_rng);
 		queue.push(std::move(generatedPhoton));
 	}
 }

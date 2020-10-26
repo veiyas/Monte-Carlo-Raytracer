@@ -72,10 +72,3 @@ private:
 	std::pair<float, float> _centerPoints;
 };
 
-struct SceneGeometry
-{
-	std::vector<TriangleObj> _sceneTris;
-	std::vector<Tetrahedron> _tetrahedons;
-	std::vector<Sphere> _spheres;
-	std::vector<CeilingLight> _ceilingLights;
-};
