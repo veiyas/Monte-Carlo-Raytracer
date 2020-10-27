@@ -92,50 +92,50 @@ void RayTree::constructRayTree(const bool& isMonteCarloTree)
 		}
 		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
+			bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(currentIntersection._intersectPoint);
+			if (!shadowPhotonsPresent)
+			{
 				double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
 					currentRay->getNormalizedDirection(),
 					computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
 					currentIntersection._normal);
 				double photonContrib = _scene->_photonMap.getPhotonFlux(currentIntersection._intersectPoint);				
 				currentRay->setColor(currentIntersectObject->getColor() * photonContrib * roughness);
-			//bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(currentIntersection._intersectPoint);
-			//if (!shadowPhotonsPresent)
-			//{
-			//}
-			//else
-			//{
-			//	if (isMonteCarloTree)
-			//	{
-			//		float terminator = _rng(_gen);
-			//		if (terminator + _terminationProbability > 1.f) //Terminate ray
-			//			currentRay->setColor(currentRay->getColor() * (1.0 / _terminationProbability));
-			//		else
-			//		{
-			//			attachReflectedMonteCarlo(currentIntersection, currentRay);
-			//			const double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
-			//				currentRay->getLeft()->getNormalizedDirection(),
-			//				computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
-			//				currentIntersection._normal);
+			}
+			else
+			{
+				if (isMonteCarloTree)
+				{
+					float terminator = _rng(_gen);
+					if (terminator + _terminationProbability > 1.f) //Terminate ray
+						currentRay->setColor(currentRay->getColor() * (1.0 / _terminationProbability));
+					else
+					{
+						attachReflectedMonteCarlo(currentIntersection, currentRay);
+						const double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
+							currentRay->getLeft()->getNormalizedDirection(),
+							computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
+							currentIntersection._normal);
 
-			//			const double shadowRayContrib = shadowRayContribution(
-			//				currentIntersection._intersectPoint,
-			//				_scene->_pointLight,
-			//				currentIntersection._normal,
-			//				_scene->_sceneGeometry
-			//			);
+						const double shadowRayContrib = shadowRayContribution(
+							currentIntersection._intersectPoint,
+							_scene->_pointLight,
+							currentIntersection._normal,
+							_scene->_sceneGeometry
+						);
 
-			//			currentRay->getLeft()->setColor(
-			//				currentRay->getColor()
-			//				* currentIntersectObject->getColor()
-			//				* roughness * shadowRayContrib);
+						currentRay->getLeft()->setColor(
+							currentRay->getColor()
+							* currentIntersectObject->getColor()
+							* roughness * shadowRayContrib);
 
-			//			rays.push(currentRay->getLeft());
-			//			++rayTreeCounter;
-			//		}
-			//	}
-			//	else
-			//		monteCarloDiffuseContribution(currentRay, currentIntersection, currentIntersectObject);
-			//}
+						rays.push(currentRay->getLeft());
+						++rayTreeCounter;
+					}
+				}
+				else
+					monteCarloDiffuseContribution(currentRay, currentIntersection, currentIntersectObject);
+			}
 		}
 		else if (currentSurfaceType == BRDF::TRANSPARENT)
 		{

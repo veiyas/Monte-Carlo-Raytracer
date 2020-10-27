@@ -34,7 +34,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ext/glm
   ext/LodePNG
   ext/kdtree++
-  ext/spatial_2.1.8/src
 )
 #
 # Setting some compile settings for the project
