@@ -4,8 +4,10 @@
 #include <random>
 #include <queue>
 #include <chrono>
-#include <kdtree.hpp>
 #include <mutex>
+#include <thread>
+#include <condition_variable>
+#include <kdtree.hpp>
 
 #include "brdf.hpp"
 #include "shapes.hpp"
@@ -35,19 +37,23 @@ public:
 private:
 	KDTree::KDTree<3, PhotonNode> _photonMap;
 	KDTree::KDTree<3, PhotonNode> _shadowPhotonMap;
-	std::mutex _mutex;
 	float _deltaFlux;
+
+	std::vector<PhotonNode> _photonData;
+	std::vector<PhotonNode> _shadowPhotonData;
+	std::mutex _mutex;
 
 	std::mt19937 _gen;
 	std::uniform_real_distribution<float> _rng;
 
+	void photonMappingThreadFunction(const SceneGeometry& geometry);
 	void addShadowPhotons(std::vector<IntersectionSurface>& inputData);
-	void addPhoton(PhotonNode&& currentPhoton, std::vector<PhotonNode>& photonData);
+	void addPhoton(PhotonNode&& currentPhoton);
 	void getPhotons(std::vector<PhotonNode>& foundPhotons, const PhotonNode& searchPoint);
 	Ray generateRandomPhotonFromLight(const float x, const float y);
 	float calculateDeltaFlux() const;
 	void handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Photon& currentPhoton);
 
 	static constexpr float SEARCH_RANGE = 1.f;
-	static constexpr size_t N_PHOTONS_TO_CAST = 10000;
+	static constexpr size_t N_PHOTONS_TO_CAST = 100000;
 };
