@@ -15,16 +15,17 @@ int main()
 	//std::cout << glm::degrees(glm::angle(glm::vec3(0, 0, 1), glm::vec3(1, 0, 0))) << '\n';
 	// CONCLUSION: glm::angle returns radians
 
-	std::cout << glm::to_string(Color(1, 0, 5) / Color(3, 0, 0.5)) << '\n';
+	//std::cout << glm::to_string(glm::clamp(Color(1, 0, 5) / Color(3, 0, 0.5), 0.0, 1.0)) << '\n';
 
 	Scene testScene{};
 
 	//Camera testCamera{ false };
-	Camera testCamera{ false, 200 };
+	Camera testCamera{ false, 800 };
 	testCamera.render(testScene);
 
 	testCamera.sqrtAllPixels();
 
+	// Save over old file ease debugging
 	testCamera.createPNG("output.png");
 
 	// Save under unique name as well, to document progress

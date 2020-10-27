@@ -7,6 +7,7 @@
 
 #include "ray.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include "util.hpp"
 
 Camera::Camera(bool eyePoint, int resolution)
 	: _eyeToggle{ eyePoint }, WIDTH{ resolution }, HEIGHT{ resolution },
@@ -77,18 +78,14 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 			Color contrib = scene.raycastScene(*ray);
 			_pixels[row][col]._color += contrib;
 
-			//if (
-			//	oldPixelVal.r - 0.00000001 > _pixels[row][col]._color.r ||
-			//	oldPixelVal.g - 0.00000001 > _pixels[row][col]._color.g ||
-			//	oldPixelVal.b - 0.00000001 > _pixels[row][col]._color.b
-			//	)
-			//{
-			//	std::cout << glm::to_string(contrib) << " whattt\n";
-			//}
-
+			if (someComponent(
+				(_pixels[row][col]._color - oldPixelVal),
+				[](double d){ return d < 0; }))
+			{
+				std::cout << glm::to_string(contrib) << " whattt\n";
+			}
 
 		}
-
 		_pixels[row][col]._color /= _numOfRaysSentFromEachPixel;
 	}
 }
@@ -99,12 +96,13 @@ void Camera::sqrtAllPixels()
 	{
 		for (size_t col = 0; col < WIDTH; ++col)
 		{
-			_pixels[row][col]._color.r = sqrt(_pixels[row][col]._color.r);
-			_pixels[row][col]._color.g = sqrt(_pixels[row][col]._color.g);
-			_pixels[row][col]._color.b = sqrt(_pixels[row][col]._color.b);
+			const Color& color = _pixels[row][col]._color;
+			if (someComponent(color, isnan<double>) ||
+				someComponent(color, isinf<double>) ||
+				someComponent(color, [](double val) { return val < 0; }))
+				std::cout << "Problem pixel detected, value: " << glm::to_string(color) << "\n";
 
-			//// DEBUG
-			//std::cout << glm::to_string(_pixels[row][col]._color) << " whattt\n";
+			_pixels[row][col]._color = glm::sqrt(glm::max(_pixels[row][col]._color, 0.0));
 		}
 	}
 }
@@ -121,7 +119,7 @@ void Camera::createPNG(const std::string& file)
 			if (maxOfPixel > maxIntensity)
 				maxIntensity = maxOfPixel;
 
-			if (isnan(color.r) || isnan(color.g) || isnan(color.b))
+			if (someComponent(color, isnan<double>))
 				std::cout << "Pixel with NaN detected, value: " << glm::to_string(color) << "\n";
 		}
 	}

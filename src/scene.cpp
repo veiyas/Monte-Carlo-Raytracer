@@ -3,6 +3,8 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "ray.hpp"
+#include "util.hpp"
+
 std::vector<TriangleObj> Scene::_sceneTris;
 std::vector<Tetrahedron> Scene::_tetrahedrons;
 std::vector<Sphere> Scene::_spheres;
@@ -37,25 +39,30 @@ Scene::Scene()
 			Color{ 1.0, 1.0, 1.0 });
 	}
 
-	//// Clown room :))
-	//constexpr Color wallColors[] = {
-	//	Color{ 1.0, 1.0, 1.0 },
-	//	Color{ 0.0, 0.7, 0.0 },
-	//	Color{ 0.0, 0.0, 0.7 },
-	//	Color{ 0.5, 0.5, 0.0 },
-	//	Color{ 0.0, 0.5, 0.5 },
-	//	Color{ 0.5, 0.0, 0.5 },
-	//};
+	// Clown room :))
+	constexpr Color wallColors[] = {
+		Color{ 1.0, 0.0, 0.0 },
+		Color{ 0.0, 0.7, 0.0 },
+		Color{ 0.0, 0.0, 0.7 },
+		Color{ 0.5, 0.5, 0.0 },
+		Color{ 0.0, 0.5, 0.5 },
+		Color{ 0.5, 0.0, 0.5 },
+	};
 
 	//constexpr Color colooor = Color{ 0.2, 0.65, 0.92 };
 	//constexpr Color wallColors[6] = {
 	//	Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 },
 	//	Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }
 	//};
-	constexpr Color wallColors[6] = {
-		Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 },
-		Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }
-	};
+
+	//constexpr Color wallColors[6] = {
+	//	Color{ 1 }, Color{ 1 }, Color{ 1 },
+	//	Color{ 1 }, Color{ 1 }, Color{ 1 },
+	//};
+	//constexpr Color wallColors[6] = {
+	//	Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 },
+	//	Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }
+	//};
 	//constexpr Color wallColors[6] = {
 	//	Color{ 1, 0.0, 0.0 }, Color{ 1, 0.0, 0.0 }, Color{ 1, 0.0, 0.0 },
 	//	Color{ 0.0, 1, 0.0 }, Color{ 0.0, 1, 0.0 }, Color{ 0.0, 1, 0.0 }
@@ -96,7 +103,7 @@ Scene::Scene()
 Color Scene::raycastScene(Ray& initialRay)
 {
 	RayTree tree{ initialRay };
-	tree.raytracePixel(false);
+	tree.raytracePixel();
 	return tree.getPixelColor();
 }
 
@@ -158,9 +165,8 @@ Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point,
 		glm::vec3 v2 = light.rightClose - light.leftClose;
 		// Transform to global
 		glm::vec3 randPointAtLight = glm::vec3(light.leftClose) + rand1 * v1 + rand2 * v2;
-		//std::cout << std::string(glm::to_string(randPointAtLight) + '\n');
 
-		glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 0);
+		glm::vec4 offset = glm::vec4(glm::normalize(randPointAtLight) * _reflectionOffset, 0);
 		Ray shadowRay{ point + offset, Vertex{ randPointAtLight, 1.0f } };
 
 		if (pathIsVisible(shadowRay, normal))
@@ -174,11 +180,10 @@ Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point,
 				-inc.getNormalizedDirection(),
 				normal);
 
-			//if (lightDistance == 0)
-			//	std::cout << "panikorkester\n";
+			if (lightDistance == 0)
+				std::cout << "panikorkester\n";
 
-			acc += brdf * cosAlpha * cosBeta / (lightDistance * lightDistance);
-			//acc += 1;
+			acc += brdf * glm::clamp(cosAlpha * cosBeta, 0.0, 1.0) / (lightDistance * lightDistance);
 		}
 	}
 
@@ -186,18 +191,7 @@ Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point,
 	double lightArea = 1;
 	// TODO Is it correct that L0 is the color of the light?
 	Color L0 = light.getColor();
-	//return Color(acc);
 	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / _numShadowRaysPerIntersection));
-
-	//if (isnan(returnValue.r) ||
-	//	isnan(returnValue.g) ||
-	//	isnan(returnValue.b) ||
-	//	isinf(returnValue.r) ||
-	//	isinf(returnValue.g) ||
-	//	isinf(returnValue.b))
-	//{
-	//	std::cout << "hejjjj, this iisno00t right\n";
-	//}
 
 	return returnValue;
 }
@@ -265,7 +259,7 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 	Direction reflectedDirection =
 		incomingRayDirection - 2.f * (glm::dot(incomingRayDirection, normal)) * normal;
 
-	glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 1);
+	glm::vec4 offset = glm::vec4(reflectedDirection * _reflectionOffset, 1);
 
 	return Ray{ Vertex{ intersectionPoint + offset },
 				Vertex{ Direction(intersectionPoint) + reflectedDirection, 1.f } };
@@ -282,7 +276,7 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 		- glm::sqrt(sqrtExpression)
 		);
 
-	glm::vec4 offset = glm::vec4(-1.0f * (normal * _reflectionOffset), 0);
+	glm::vec4 offset = glm::vec4((refractDir * _reflectionOffset), 0);
 
 	return Ray{ intersectionPoint + offset, Vertex{ glm::vec3{ intersectionPoint } + refractDir, 1.0f } };
 }
@@ -294,11 +288,11 @@ Scene::RayTree::RayTree(Ray& initialRay)
 	_treeSize = 1;
 }
 
-void Scene::RayTree::raytracePixel(bool isMonteCarloTree)
+void Scene::RayTree::raytracePixel()
 {
-	constructRayTree(isMonteCarloTree);
+	constructRayTree();
 
-	_finalColor = traverseRayTree(_head.get(), isMonteCarloTree);
+	_finalColor = traverseRayTree(_head.get());
 }
 
 Direction Scene::computeShadowRayDirection(const Vertex& point)
@@ -306,22 +300,9 @@ Direction Scene::computeShadowRayDirection(const Vertex& point)
 	return glm::normalize(glm::vec3(_pointLights[0].getPosition()) - glm::vec3(point));
 }
 
-//void Scene::RayTree::monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj)
-//{
-//	Ray firstRandomReflectedRay = generateRandomReflectedRay(initialRay->getNormalizedDirection(), initialIntersection._normal, initialIntersection._intersectPoint);
-//	firstRandomReflectedRay.setParent(initialRay);
-//	firstRandomReflectedRay.setColor(initialRay->getColor() * intersectObj->getColor());
-//
-//	RayTree monteCarloTree{ firstRandomReflectedRay };
-//	//monteCarloTree.raytracePixel(true);
-//	monteCarloTree.constructRayTree(true);
-//
-//	initialRay->setLeft(std::move(*monteCarloTree._head));
-//	//initialRay->setColor(monteCarloTree.getPixelColor());
-//}
-
 Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint, float rand1, float rand2)
 {
+
 	//Determine local coordinate system and transformations matrices for it
 	const glm::vec3 Z{ normal };
 	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
@@ -363,7 +344,7 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	return Ray{ intersectPoint + offset, globalReflected };
 }
 
-void Scene::RayTree::constructRayTree(bool isMonteCarloTree)
+void Scene::RayTree::constructRayTree()
 {
 	//TODO this method needs to be shortened
 	std::queue<Ray*> rays;
@@ -377,12 +358,6 @@ void Scene::RayTree::constructRayTree(bool isMonteCarloTree)
 		rays.pop();
 
 		auto rayImportance = currentRay->getColor();
-
-		// This should NOT be used with monte carlo
-		// Ray will not contribute much to final image
-		//static constexpr float EPS = 0.0001;
-		//if (rayImportance.r < EPS && rayImportance.g < EPS && rayImportance.b < EPS)			
-		//	continue;
 
 		// The rayIntersection method adds intersection info to ray
 		bool intersected = rayIntersection(*currentRay);
@@ -411,7 +386,6 @@ void Scene::RayTree::constructRayTree(bool isMonteCarloTree)
 			float rand1 = _rng(_gen);
 			float rand2 = _rng(_gen);
 			if (rand1 + _terminationProbability > 1.f) //Terminate ray
-				//currentRay->setColor(currentRay->getColor() * (1.0 / _terminationProbability));
 				;
 			else
 			{
@@ -424,10 +398,14 @@ void Scene::RayTree::constructRayTree(bool isMonteCarloTree)
 
 
 
-				//if (roughness > 1)
-				//{
-				//	std::cout << "Jaså\n";
-				//}
+				if (
+					//roughness > 1 ||
+					roughness < 0 || 
+					isnan(roughness) || isinf(roughness)
+					)
+				{
+					std::cout << "Jaså\n";
+				}
 
 
 
@@ -513,6 +491,15 @@ void Scene::RayTree::constructRayTree(bool isMonteCarloTree)
 			currentRay->getLeft()->setColor(reflectionCoeff * currentRay->getColor());
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
+
+			if (
+				   (currentRay->getLeft()->getColor().r > currentRay->getColor().r)
+				|| (currentRay->getLeft()->getColor().g > currentRay->getColor().g)
+				|| (currentRay->getLeft()->getColor().b > currentRay->getColor().b)
+			   )
+			{
+				std::cout << "NOOoooooooOooO\n";
+			}
 		}
 	}
 }
@@ -578,17 +565,14 @@ void Scene::RayTree::constructRayTree(bool isMonteCarloTree)
 
 
 // THIS IS COMPLETELY RECURSIVE FOR NOW; i cant be bothered to figure out any other 
-// way right now
-Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
+// way atm
+Color Scene::RayTree::traverseRayTree(Ray* input) const
 {
 	Ray* currentRay = input;
 
 
-	auto c = currentRay->getColor();
-	if (isinf(c.r) || isinf(c.g) || isinf(c.b))
-	{
-		std::cout << "zeeeerooo\n";
-	}
+	if (someComponent(currentRay->getColor(), isnan<double>))
+		std::cout << "isnan\n";
 
 
 	Ray* left = currentRay->getLeft();
@@ -599,7 +583,7 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 	// TODO Ideally the ray should always intersect something
 	if (currentRay->getIntersectionData().has_value() == false)
 		return Color{ 0 };
-		//return Color{ 0,0,1 };
+
 	//auto surfaceType = currentRay->getIntersectedObject().value()->getBRDF();
 	auto& intersectData = currentRay->getIntersectionData().value();
 	auto& intersectObject = currentRay->getIntersectedObject().value();
@@ -628,9 +612,9 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 		//	std::cout << "hkhjkl\n";
 		//}
 
-		if (intersectObject->getBRDF().getSurfaceType() == BRDF::LIGHT)
-			return intersectObject->getColor() / 100.0; // TODO Dividing here is probably cheating an not right at all
-		else
+		//if (intersectObject->getBRDF().getSurfaceType() == BRDF::LIGHT)
+		//	return intersectObject->getColor(); // TODO Dividing here is probably cheating an not right at all
+		//else
 			return localLightContribution;
 		//return ;
 	}
@@ -652,17 +636,17 @@ Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 		//}
 
 		return safeDivide(left->getColor(), currentRay->getColor()) *
-			traverseRayTree(left, isMonteCarloTree) + localLightContribution;
+			traverseRayTree(left) + localLightContribution;
 	}
 	else if (left == nullptr && right)
 	{
 		return safeDivide(right->getColor(), currentRay->getColor()) *
-			traverseRayTree(right, isMonteCarloTree) + localLightContribution;
+			traverseRayTree(right) + localLightContribution;
 	}
 	else if (left && right)
 	{
-		Color leftSubContrib = traverseRayTree(currentRay->getLeft(), isMonteCarloTree) * left->getColor();
-		Color rightSubContrib = traverseRayTree(currentRay->getRight(), isMonteCarloTree) * right->getColor();
+		Color leftSubContrib = traverseRayTree(currentRay->getLeft()) * left->getColor();
+		Color rightSubContrib = traverseRayTree(currentRay->getRight()) * right->getColor();
 
 		return safeDivide((leftSubContrib + rightSubContrib), currentRay->getColor()) + localLightContribution;
 		//return (leftSubContrib + rightSubContrib);

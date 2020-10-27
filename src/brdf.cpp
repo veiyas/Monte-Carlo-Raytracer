@@ -38,7 +38,8 @@ double BRDF::computeOrenNayar(const Direction& incoming, const Direction& shadow
 	double A = 1.0 - 0.5 * (_roughnessSquared / (_roughnessSquared + 0.33));
 	double B = 0.45 * (_roughnessSquared / (_roughnessSquared + 0.09));
 	double cosThetaIncoming = glm::dot(incoming, normal);
-	double cosThetaShadowRay = glm::dot(shadowRay, normal);
+	// Min here is used to avoid numerical errors which cause -nan(ind)
+	double cosThetaShadowRay = glm::min((double)glm::dot(shadowRay, normal), 1.0);
 	double thetaShadowRay = glm::acos(cosThetaShadowRay);
 	double thetaIncoming = glm::acos(cosThetaIncoming);
 	double alpha = glm::max(thetaShadowRay, thetaIncoming);

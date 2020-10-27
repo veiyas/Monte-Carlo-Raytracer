@@ -9,7 +9,7 @@ Color safeDivide(const Color& num, const Color& den)
 
 	if (isnan(r) || isnan(g) || isnan(b) ||
 	    isinf(r) || isinf(g) || isinf(b))
-		std::cout << glm::to_string(num) << '/' << glm::to_string(den) << "\n = (" << r << ", " << g << ", " << b << ") bajskorv\n";
+		std::cout << glm::to_string(num) << '/' << glm::to_string(den) << "\n = (" << r << ", " << g << ", " << b << ") oh nooo\n";
 	
 	return Color(r, g, b);
 }

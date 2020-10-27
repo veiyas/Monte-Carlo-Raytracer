@@ -63,7 +63,7 @@ private:
 	{
 	public:
 		RayTree(Ray& initialRay);
-		void raytracePixel(bool isMonteCarloTree);
+		void raytracePixel();
 		Color getPixelColor() const { return _finalColor; }
 
 	private:
@@ -80,8 +80,8 @@ private:
 		Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal,
 		                               const Vertex& intersectPoint, float rand1, float rand2);
 
-		void constructRayTree(bool isMonteCarloTree);
-		Color traverseRayTree(Ray* input, bool isMonteCarloTree) const;
+		void constructRayTree();
+		Color traverseRayTree(Ray* input) const;
 
 		void attachReflected(const IntersectionData& intData, Ray* currentRay) const;
 		// Note: rand1 is the same value that is used for ray termination!
