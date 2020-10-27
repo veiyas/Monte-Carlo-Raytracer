@@ -49,5 +49,5 @@ private:
 	void handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Photon& currentPhoton);
 
 	static constexpr float SEARCH_RANGE = 1.f;
-	static constexpr size_t N_PHOTONS_TO_CAST = 10000;
+	static constexpr size_t N_PHOTONS_TO_CAST = 1000000;
 };

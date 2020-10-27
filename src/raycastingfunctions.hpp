@@ -3,7 +3,7 @@
 #include "ray.hpp"
 #include "scenegeometry.hpp"
 
-using IntersectionSurface = std::pair<IntersectionData, unsigned>;
+
 /************************
 	  Declarations
 ************************/
@@ -17,8 +17,12 @@ static constexpr float _terminationProbability = 0.2f;
 	Implementations
 ************************/
 template<typename T>
-T* calcIntersection(std::vector<T>& objects, Ray& ray, float& minT,
-	std::optional<IntersectionData>& closestIntersectData, SceneObject* closestIntersectObject)
+T* calcIntersection(
+	std::vector<T>& objects,
+	Ray& ray,
+	float& minT,
+	std::optional<IntersectionData>& closestIntersectData,
+	SceneObject* closestIntersectObject)
 {
 	T* intersectObject = static_cast<T*>(closestIntersectObject);
 
@@ -58,7 +62,23 @@ inline static bool rayIntersection(Ray& ray, SceneGeometry& geometry)
 
 
 template<typename T>
-inline void calcIntersection(const std::vector<T>& objects, Ray& ray, std::vector<IntersectionSurface>& intersections)
+inline void calcIntersection(
+	const std::vector<T>& objects,
+	Ray& ray,
+	std::vector<IntersectionSurface>& intersections)
+{
+	for (size_t i{ 0 }; i < objects.size(); ++i)
+	{
+		objects[i].rayIntersections(ray, intersections);
+	}
+}
+
+//Specialize for TriangleObj as these can only intersect once
+template<>
+inline void calcIntersection<TriangleObj>(
+	const std::vector<TriangleObj>& objects,
+	Ray& ray,
+	std::vector<IntersectionSurface>& intersections)
 {
 	for (size_t i{ 0 }; i < objects.size(); ++i)
 	{

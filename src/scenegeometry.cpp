@@ -48,7 +48,7 @@ SceneGeometry::SceneGeometry()
 	}
 
 	//Ceiling light
-	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 6.f, 0.f);
+	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f);
 
 	//// Algots scene
 	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
