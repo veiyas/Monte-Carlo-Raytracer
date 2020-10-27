@@ -24,6 +24,9 @@ public:
 	Color raycastScene(Ray& initialRay);
 	unsigned getNCalculations() const { return _nCalculations; }
 
+	void addSphere(BRDF brdf, float radius, Color color, Vertex position);
+	void addTetra(BRDF brdf, float radius, Color color, Vertex position);
+
 private:
 	std::vector<TriangleObj> _sceneTris;
 	std::vector<Tetrahedron> _tetrahedrons;

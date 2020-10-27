@@ -83,17 +83,7 @@ Scene::Scene(const Config& conf)
 	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 6.f, 0.f);
 	//_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f);
 
-	//// Algots scene
-	_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.0, 0.0, 1.0 }, Vertex{ 6.0f, -1.5f, -2.0f, 1.0f });
-	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 0.1 }, Vertex{ 9.f, 0.f, -2.5f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.7, 0.2, 1.0 }, Vertex{ 5.f, 4.f, -3.5f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.0, 0.0, 0.0 }, Vertex{ 7.f, -3.5f, 3.5f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.5f, Color{ 0.1, 0.1, 0.1 }, Vertex{ 8.f, 1.5f, -3.5f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.5f, Color{ 0.5, 0.5, 0.7 }, Vertex{ 4.f, -3.5f, -3.f, 1.f });
-	//_pointLights.emplace_back(Vertex(3, 0, 4, 1), Color(1, 1, 1));
-	//_pointLights.emplace_back(Vertex(0, 0, 1, 1), Color(1, 1, 1));
-	//_pointLights.emplace_back(Vertex(2, 1, 4, 1), Color(1, 1, 1));
+	// Objects can now be added via the public interface
 }
 
 Color Scene::raycastScene(Ray& initialRay)
@@ -101,6 +91,16 @@ Color Scene::raycastScene(Ray& initialRay)
 	RayTree tree{ initialRay, *this };
 	tree.raytracePixel();
 	return tree.getPixelColor();
+}
+
+void Scene::addSphere(BRDF brdf, float radius, Color color, Vertex position)
+{
+	_spheres.emplace_back(brdf, radius, color, position);
+}
+
+void Scene::addTetra(BRDF brdf, float radius, Color color, Vertex position)
+{
+	_tetrahedrons.emplace_back(brdf, radius, color, position);
 }
 
 bool Scene::rayIntersection(Ray& ray) const
