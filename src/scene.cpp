@@ -289,7 +289,6 @@ Scene::RayTree::RayTree(Ray& initialRay, const Scene& scene)
 void Scene::RayTree::raytracePixel()
 {
 	constructRayTree();
-
 	_finalColor = traverseRayTree(_head.get());
 }
 
@@ -395,43 +394,11 @@ void Scene::RayTree::constructRayTree()
 					-currentRay->getNormalizedDirection(),
 					currentIntersection._normal);
 
-
-
-				if (
-					//roughness > 1 ||
-					roughness < 0 || 
-					isnan(roughness) || isinf(roughness)
-					)
-				{
-					std::cout << "Jaså\n";
-				}
-
-
-
 				currentRay->getLeft()->setColor(
 					(glm::pi<double>() / (1.0 - _config.monteCarloTerminationProbability))
 					* currentRay->getColor()
 					* currentIntersectObject->getColor()
 					* roughness);
-
-
-
-
-				//if (
-				//	   (currentRay->getLeft()->getColor().r > currentRay->getColor().r)
-				//	|| (currentRay->getLeft()->getColor().g > currentRay->getColor().g)
-				//	|| (currentRay->getLeft()->getColor().b > currentRay->getColor().b)
-				//   )
-				//{
-				//	std::cout << "NOOoooooooOooO\n";
-				//}
-
-
-
-				//if (!rayIntersection(*currentRay->getLeft()))
-				//	std::cout << "hej\n";
-
-
 
 				rays.push(currentRay->getLeft());
 				++rayTreeCounter;
@@ -439,17 +406,7 @@ void Scene::RayTree::constructRayTree()
 		}
 		else if (currentSurfaceType == BRDF::TRANSPARENT)
 		{
-
-
-			//// TEST
-			//static constexpr float EPS = 0.0001;
-			//if (rayImportance.r < EPS && rayImportance.g < EPS && rayImportance.b < EPS)			
-			//	continue;
-
-
-
 			float incAngle = glm::angle(-currentRay->getNormalizedDirection(), currentIntersection._normal);
-
 
 			// How much of the incoming importance/radiance is reflected, between 0 and 1.
 			// The rest of the importance/radiance is transmitted.
@@ -499,6 +456,8 @@ void Scene::RayTree::constructRayTree()
 	}
 }
 
+// I leave this here for now -- the plan is to rewrite the new version to be iterative,
+// and this will be a useful reference
 //Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
 //{
 //	Ray* currentRay = input;

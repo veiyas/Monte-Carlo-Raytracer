@@ -62,8 +62,6 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 		{
 			float yOffset = _rng(_gen);
 			float zOffset = _rng(_gen);
-			//float yOffset = 0.5f;
-			//float zOffset = 0.5f;
 
 			Vertex pixelPoint{
 				0.0f,
@@ -77,16 +75,17 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 			_pixels[row][col].addRay(ray);
 
 			// Testing
-			auto oldPixelVal = _pixels[row][col]._color;
+			//auto oldPixelVal = _pixels[row][col]._color;
+
 			Color contrib = scene.raycastScene(*ray);
 			_pixels[row][col]._color += contrib;
 
-			if (someComponent(
-				(_pixels[row][col]._color - oldPixelVal),
-				[](double d){ return d < 0; }))
-			{
-				std::cout << glm::to_string(contrib) << " whattt\n";
-			}
+			//if (someComponent(
+			//	(_pixels[row][col]._color - oldPixelVal),
+			//	[](double d){ return d < 0; }))
+			//{
+			//	std::cout << glm::to_string(contrib) << " whattt\n";
+			//}
 
 		}
 		_pixels[row][col]._color /= _config.samplesPerPixel;
