@@ -1,13 +1,15 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>   
+#include <string>
 
 #include "basic_types.hpp"
 #include "scene.hpp"
 #include "camera.hpp"
 #include "ray.hpp"
+#include "config.hpp"
 
-#include "glm/gtx/string_cast.hpp"
+//#include "glm/gtx/string_cast.hpp"
 
 int main()
 {
@@ -17,10 +19,17 @@ int main()
 
 	//std::cout << glm::to_string(glm::clamp(Color(1, 0, 5) / Color(3, 0, 0.5), 0.0, 1.0)) << '\n';
 
-	Scene testScene{};
+	const Config config = {
+		200,      // Resolution
+		10,       // Spp
+		//0.2f,     // Termination probability // NOT WORKING ATM
+		false,    // Eye Toggle
+	};
+
+	Scene testScene{ };
 
 	//Camera testCamera{ false };
-	Camera testCamera{ false, 800 };
+	Camera testCamera{ config };
 	testCamera.render(testScene);
 
 	testCamera.sqrtAllPixels();

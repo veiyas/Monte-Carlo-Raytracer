@@ -3,15 +3,14 @@
 #include <vector>
 #include <random>
 
-#include "lodepng.h"
-
 #include "basic_types.hpp"
 #include "scene.hpp"
+#include "config.hpp"
 
 class Camera
 {
 public:
-	Camera(bool eyePoint = false, int resolution = 800);
+	Camera(const Config& config);
 
 	void render(Scene& scene);
 	void sqrtAllPixels();
@@ -21,15 +20,12 @@ private:
 	const Vertex _eyePoint1{ -2.0f, 0.0f, 0.0f, 1.0f };
 	const Vertex _eyePoint2{ -1.0f, 0.0f, 0.0f, 1.0f };
 
-	// Decides which of the two eye points is used
-	bool _eyeToggle = false;
+	const Config& _config;
 
 	// The number of pixels in each direction
 	const int WIDTH;
 	const int HEIGHT;
 	const float pixelSideLength;
-
-	static constexpr int _numOfRaysSentFromEachPixel = 1000;
 	
 	using PixelGrid = std::vector<std::vector<Pixel>>;
 	PixelGrid _pixels{ HEIGHT, std::vector<Pixel>(WIDTH) };

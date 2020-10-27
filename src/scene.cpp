@@ -86,14 +86,16 @@ Scene::Scene()
 	}
 
 	//Ceiling light
-	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f); // These are not implemented properly yet
+	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 6.f, 0.f);
+	//_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f);
 
 	//// Algots scene
 	_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.0, 0.0, 1.0 }, Vertex{ 6.0f, -1.5f, -2.0f, 1.0f });
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 2.f, Color{ 0.1, 0.1, 0.1 }, Vertex{ 9.f, 0.f, -2.5f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, -3.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 7.f, -3.5f, 3.5f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 0.1 }, Vertex{ 8.f, 1.5f, -3.5f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.0f, Color{ 0.7, 0.2, 1.0 }, Vertex{ 5.f, 4.f, -3.5f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.0, 0.0, 0.0 }, Vertex{ 7.f, -3.5f, 3.5f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.5f, Color{ 0.1, 0.1, 0.1 }, Vertex{ 8.f, 1.5f, -3.5f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.5f, Color{ 0.5, 0.5, 0.7 }, Vertex{ 4.f, -3.5f, -3.f, 1.f });
 	//_pointLights.emplace_back(Vertex(3, 0, 4, 1), Color(1, 1, 1));
 	//_pointLights.emplace_back(Vertex(0, 0, 1, 1), Color(1, 1, 1));
@@ -166,7 +168,7 @@ Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point,
 		// Transform to global
 		glm::vec3 randPointAtLight = glm::vec3(light.leftClose) + rand1 * v1 + rand2 * v2;
 
-		glm::vec4 offset = glm::vec4(glm::normalize(randPointAtLight) * _reflectionOffset, 0);
+		glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 0);
 		Ray shadowRay{ point + offset, Vertex{ randPointAtLight, 1.0f } };
 
 		if (pathIsVisible(shadowRay, normal))
@@ -183,6 +185,7 @@ Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point,
 			if (lightDistance == 0)
 				std::cout << "panikorkester\n";
 
+			brdf = 1;
 			acc += brdf * glm::clamp(cosAlpha * cosBeta, 0.0, 1.0) / (lightDistance * lightDistance);
 		}
 	}
@@ -259,7 +262,7 @@ Ray Scene::computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 	Direction reflectedDirection =
 		incomingRayDirection - 2.f * (glm::dot(incomingRayDirection, normal)) * normal;
 
-	glm::vec4 offset = glm::vec4(reflectedDirection * _reflectionOffset, 1);
+	glm::vec4 offset = glm::vec4(reflectedDirection * _reflectionOffset, 0);
 
 	return Ray{ Vertex{ intersectionPoint + offset },
 				Vertex{ Direction(intersectionPoint) + reflectedDirection, 1.f } };
@@ -327,8 +330,9 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	};
 	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
 
-	//Generate random azimuth (phi) and inclination (theta)
-	// Scaled to compensate for the russian roulette termination
+	// Generate random azimuth (phi) and inclination (theta)
+	// Phi is caled to compensate for decreased range of rand1 since the ray is terminated 
+	// russian roulette for high values for rand1
 	const float phi = (glm::two_pi<float>() / (1 - _terminationProbability)) * rand1;
 	const float theta = glm::asin(glm::sqrt(rand2));
 	const float x = glm::cos(phi) * glm::sin(theta);
@@ -363,7 +367,7 @@ void Scene::RayTree::constructRayTree()
 		bool intersected = rayIntersection(*currentRay);
 		if (!intersected)
 		{
-			//std::cout << "A ray with no intersections detected\n";
+			std::cout << "A ray with no intersections detected\n";
 			continue;
 		}
 
@@ -429,6 +433,10 @@ void Scene::RayTree::constructRayTree()
 
 
 
+				//if (!rayIntersection(*currentRay->getLeft()))
+				//	std::cout << "hej\n";
+
+
 
 				rays.push(currentRay->getLeft());
 				++rayTreeCounter;
@@ -483,6 +491,7 @@ void Scene::RayTree::constructRayTree()
 				rays.push(currentRay->getRight());
 				++rayTreeCounter;
 
+				// Cut off internal reflection if transmitted from inside object
 				if (currentRay->isInsideObject())
 					continue;
 			}
@@ -491,15 +500,6 @@ void Scene::RayTree::constructRayTree()
 			currentRay->getLeft()->setColor(reflectionCoeff * currentRay->getColor());
 			rays.push(currentRay->getLeft());
 			++rayTreeCounter;
-
-			if (
-				   (currentRay->getLeft()->getColor().r > currentRay->getColor().r)
-				|| (currentRay->getLeft()->getColor().g > currentRay->getColor().g)
-				|| (currentRay->getLeft()->getColor().b > currentRay->getColor().b)
-			   )
-			{
-				std::cout << "NOOoooooooOooO\n";
-			}
 		}
 	}
 }
@@ -570,17 +570,14 @@ Color Scene::RayTree::traverseRayTree(Ray* input) const
 {
 	Ray* currentRay = input;
 
-
+	// DEBUG
 	if (someComponent(currentRay->getColor(), isnan<double>))
 		std::cout << "isnan\n";
-
 
 	Ray* left = currentRay->getLeft();
 	Ray* right = currentRay->getRight();
 
-	// TODO Local lighting model contibutions
-
-	// TODO Ideally the ray should always intersect something
+	// Ideally the ray should always intersect something
 	if (currentRay->getIntersectionData().has_value() == false)
 		return Color{ 0 };
 
@@ -600,41 +597,13 @@ Color Scene::RayTree::traverseRayTree(Ray* input) const
 
 	if (left == nullptr && right == nullptr)
 	{
-		//if (intersectObject->getColor() != Color(0, 0, 1))
-		//	std::cout << "Not blue\n";
-
-		//auto returnValue = currentRay->getColor() * intersectObject->getColor()
-		//	* shadowRayContribution(intersectData._intersectPoint,
-		//		intersectData._normal);
-
-		//if (glm::length(localLightContribution) > 0.001)
-		//{
-		//	std::cout << "hkhjkl\n";
-		//}
-
 		//if (intersectObject->getBRDF().getSurfaceType() == BRDF::LIGHT)
-		//	return intersectObject->getColor(); // TODO Dividing here is probably cheating an not right at all
+		//	return intersectObject->getColor() / 1.0; // TODO Dividing here is probably cheating an not right at all
 		//else
 			return localLightContribution;
-		//return ;
 	}
 	else if (left && right == nullptr)
 	{
-		//if (
-		//	(left->getColor() / currentRay->getColor()).r > 1
-		//	|| (left->getColor() / currentRay->getColor()).g > 1
-		//	|| (left->getColor() / currentRay->getColor()).b > 1
-		//   )
-		//{
-		//	std::cout << "NOOoooooooOooO\n";
-		//}
-
-		//auto c = left->getColor();
-		//if (c.r == 0 && c.g == 0 && c.b == 0)
-		//{
-		//	std::cout << "zeeeerooo\n";
-		//}
-
 		return safeDivide(left->getColor(), currentRay->getColor()) *
 			traverseRayTree(left) + localLightContribution;
 	}
@@ -649,7 +618,6 @@ Color Scene::RayTree::traverseRayTree(Ray* input) const
 		Color rightSubContrib = traverseRayTree(currentRay->getRight()) * right->getColor();
 
 		return safeDivide((leftSubContrib + rightSubContrib), currentRay->getColor()) + localLightContribution;
-		//return (leftSubContrib + rightSubContrib);
 	}
 }
 

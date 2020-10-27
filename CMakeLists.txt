@@ -26,6 +26,8 @@ add_executable(${PROJECT_NAME}
   src/ray.hpp
   src/ray.cpp
   src/util.hpp
+  src/util.cpp
+  src/config.hpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
   src

@@ -4,6 +4,10 @@
 
 Ray::Ray(Vertex start, Vertex end)
 {
+	// DEBUG
+	//if (glm::abs(start.w - 1) > 0.0001 || abs(end.w - 1) > 0.0001)
+	//	std::cout << "Ooops, w != 1\n";
+
 	_start = std::make_unique<Vertex>(start);
 	_end = std::make_unique<Vertex>(end);
 }

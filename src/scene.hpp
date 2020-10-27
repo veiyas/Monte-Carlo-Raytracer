@@ -70,7 +70,7 @@ private:
 		std::unique_ptr<Ray> _head;
 		Color _finalColor;
 		size_t _treeSize;
-		constexpr static size_t _maxTreeSize = 512;		
+		constexpr static size_t _maxTreeSize = 512;
 
 		//Random generator stuff for monte carlo
 		constexpr static float _terminationProbability = 0.2f;
