@@ -15,65 +15,70 @@
 #include "basic_types.hpp"
 #include "shapes.hpp"
 #include "lights.hpp"
+#include "config.hpp"
 
-class Scene //This class became some sort of reverse singleton through poor preparation
+class Scene
 {
 public:
-	Scene();
+	Scene(const Config& conf);
 	Color raycastScene(Ray& initialRay);
 	unsigned getNCalculations() const { return _nCalculations; }
 
 private:
-	static std::vector<TriangleObj> _sceneTris;
-	static std::vector<Tetrahedron> _tetrahedrons;
-	static std::vector<Sphere> _spheres;
-	static std::vector<PointLight> _pointLights;
-	static std::vector<CeilingLight> _ceilingLights;
-	static long long unsigned _nCalculations;
+	std::vector<TriangleObj> _sceneTris;
+	std::vector<Tetrahedron> _tetrahedrons;
+	std::vector<Sphere> _spheres;
+	std::vector<PointLight> _pointLights;
+	std::vector<CeilingLight> _ceilingLights;
+	mutable long long unsigned _nCalculations;
 
-	static constexpr int _numShadowRaysPerIntersection = 1;
-	// How much reflected (and alos refracted) rays starting point is offset from
-	// intersection along normal
+	const Config& _config;
+
+	// How much reflected (and also refracted) rays starting point is offset from
+	// intersection
 	static constexpr float _reflectionOffset = 0.0001;
 
-	static std::mt19937 _gen;
-	static std::uniform_real_distribution<float> _rng;
+	mutable std::mt19937 _gen;
+	mutable std::uniform_real_distribution<float> _rng;
 
 	// Checks for intersections and if so attaches intersection data to arg
-	static bool rayIntersection(Ray& arg);
+	bool rayIntersection(Ray& arg) const;
 	//Helper method for rayIntersection
 	template<typename T>
-	static T* calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
-		std::optional<IntersectionData>& closestIntersectData, SceneObject* closestIntersectObject);
+	const T* calcIntersections(const std::vector<T>& container, Ray& ray, float& minT,
+		std::optional<IntersectionData>& closestIntersectData, const SceneObject* closestIntersectObject) const;
 
-	static Color localAreaLightContribution(const Ray& inc, const Vertex& point,
-	                                        const Direction& normal, const SceneObject* obj);
-	static bool pathIsVisible(Ray& ray, const Direction& normal);
-	static double shadowRayContribution(const Vertex& point, const Direction& normal);
+	Color localAreaLightContribution(const Ray& inc, const Vertex& point,
+		const Direction& normal, const SceneObject* obj) const;
+	bool pathIsVisible(Ray& ray, const Direction& normal) const;
+	double shadowRayContribution(const Vertex& point, const Direction& normal);
 	static bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal);
 	
 	//TODO these things maybe fits better in RayTree
+	//They def fits better as object properties, hehe
+	//At leas the glass one
 	static constexpr float _airIndex = 1.f;
 	static constexpr float _glassIndex = 1.5f;
 	static Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
 	static Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
-	static Direction computeShadowRayDirection(const Vertex& point);
+	Direction computeShadowRayDirection(const Vertex& point);
 
 	class RayTree
 	{
 	public:
-		RayTree(Ray& initialRay);
+		RayTree(Ray& initialRay, const Scene& scene);
 		void raytracePixel();
 		Color getPixelColor() const { return _finalColor; }
 
 	private:
+		const Config& _config;
 		std::unique_ptr<Ray> _head;
 		Color _finalColor;
 		size_t _treeSize;
+		const Scene& _scene;
 		constexpr static size_t _maxTreeSize = 512;
 
 		//Random generator stuff for monte carlo
-		constexpr static float _terminationProbability = 0.2f;
 		std::mt19937 _gen;
 		std::uniform_real_distribution<float> _rng;
 		//void monteCarloDiffuseContribution(Ray* initialRay, const IntersectionData& initialIntersection, const SceneObject* intersectObj);

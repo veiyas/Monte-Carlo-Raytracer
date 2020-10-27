@@ -22,13 +22,15 @@ int main()
 	const Config config = {
 		200,      // Resolution
 		10,       // Spp
-		//0.2f,     // Termination probability // NOT WORKING ATM
 		false,    // Eye Toggle
+
+		0.2f,     // Termination probability // NOT WORKING ATM
+		1,        // Num shadowRays per intersection
 	};
 
-	Scene testScene{ };
+	Scene testScene{ config };
 
-	//Camera testCamera{ false };
+
 	Camera testCamera{ config };
 	testCamera.render(testScene);
 

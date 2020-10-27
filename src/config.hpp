@@ -4,6 +4,8 @@ struct Config
 {
 	int resolution;
 	int samplesPerPixel;
-	float monteCarloTerminationProbability;
 	bool eyeToggle;
+
+	float monteCarloTerminationProbability;
+	int numShadowRaysPerIntersection;
 };

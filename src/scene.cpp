@@ -5,18 +5,12 @@
 #include "ray.hpp"
 #include "util.hpp"
 
-std::vector<TriangleObj> Scene::_sceneTris;
-std::vector<Tetrahedron> Scene::_tetrahedrons;
-std::vector<Sphere> Scene::_spheres;
-std::vector<PointLight> Scene::_pointLights;
-std::vector<CeilingLight> Scene::_ceilingLights;
-long long unsigned Scene::_nCalculations = 0;
-
-std::mt19937 Scene::_gen = std::mt19937{ std::random_device{}() };
-std::uniform_real_distribution<float> Scene::_rng = std::uniform_real_distribution<float>{ 0.f, 1.f };
-
-Scene::Scene()
+Scene::Scene(const Config& conf)
+	: _config{ conf }, _nCalculations{ 0 }
 {
+	_gen = std::mt19937{ std::random_device{}() };
+	_rng = std::uniform_real_distribution<float>{ 0.f, 1.f };
+
 	_sceneTris.reserve(24);
 
 	//Floor triangles
@@ -104,15 +98,15 @@ Scene::Scene()
 
 Color Scene::raycastScene(Ray& initialRay)
 {
-	RayTree tree{ initialRay };
+	RayTree tree{ initialRay, *this };
 	tree.raytracePixel();
 	return tree.getPixelColor();
 }
 
-bool Scene::rayIntersection(Ray& ray)
+bool Scene::rayIntersection(Ray& ray) const
 {
 	std::optional<IntersectionData> closestIntersectData{};
-	SceneObject* closestIntersectObject = nullptr;
+	const SceneObject* closestIntersectObject = nullptr;
 	float minT = 1e+10;
 
 	closestIntersectObject = calcIntersections(_sceneTris, ray, minT, closestIntersectData, closestIntersectObject);
@@ -130,10 +124,10 @@ bool Scene::rayIntersection(Ray& ray)
 }
 
 template<typename T>
-T* Scene::calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
-	std::optional<IntersectionData>& closestIntersectData, SceneObject* closestIntersectObject)
+const T* Scene::calcIntersections(const std::vector<T>& container, Ray& ray, float& minT,
+	std::optional<IntersectionData>& closestIntersectData, const SceneObject* closestIntersectObject) const
 {
-	T* intersectObject = static_cast<T*>(closestIntersectObject);
+	const T* intersectObject = static_cast<const T*>(closestIntersectObject);
 
 	for (size_t i{ 0 }; i < container.size(); ++i)
 	{
@@ -151,14 +145,14 @@ T* Scene::calcIntersections(std::vector<T>& container, Ray& ray, float& minT,
 }
 
 Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point, 
-                                        const Direction& normal, const SceneObject* obj)
+                                        const Direction& normal, const SceneObject* obj) const
 {
 	// TODO Adapt for varying amout of lights
 	auto light = _ceilingLights[0];
 
 	double acc = 0;
 
-	for (size_t i = 0; i < _numShadowRaysPerIntersection; i++)
+	for (size_t i = 0; i < _config.numShadowRaysPerIntersection; i++)
 	{
 		float rand1 = _rng(_gen);
 		float rand2 = _rng(_gen);
@@ -194,12 +188,12 @@ Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point,
 	double lightArea = 1;
 	// TODO Is it correct that L0 is the color of the light?
 	Color L0 = light.getColor();
-	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / _numShadowRaysPerIntersection));
+	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / _config.numShadowRaysPerIntersection));
 
 	return returnValue;
 }
 
-bool Scene::pathIsVisible(Ray& ray, const Direction& normal)
+bool Scene::pathIsVisible(Ray& ray, const Direction& normal) const
 {
 	bool visible = true;
 
@@ -284,8 +278,9 @@ Ray Scene::computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 	return Ray{ intersectionPoint + offset, Vertex{ glm::vec3{ intersectionPoint } + refractDir, 1.0f } };
 }
 
-Scene::RayTree::RayTree(Ray& initialRay)
-	: _gen{ std::random_device{}() }, _rng{ 0.f, 1.f }
+Scene::RayTree::RayTree(Ray& initialRay, const Scene& scene)
+	: _gen{ std::random_device{}() }, _rng{ 0.f, 1.f },
+	  _scene{ scene }, _config{ scene._config }
 {
 	_head = std::make_unique<Ray>(initialRay);
 	_treeSize = 1;
@@ -333,7 +328,7 @@ Ray Scene::RayTree::generateRandomReflectedRay(const Direction& initialDirection
 	// Generate random azimuth (phi) and inclination (theta)
 	// Phi is caled to compensate for decreased range of rand1 since the ray is terminated 
 	// russian roulette for high values for rand1
-	const float phi = (glm::two_pi<float>() / (1 - _terminationProbability)) * rand1;
+	const float phi = (glm::two_pi<float>() / (1 - _config.monteCarloTerminationProbability)) * rand1;
 	const float theta = glm::asin(glm::sqrt(rand2));
 	const float x = glm::cos(phi) * glm::sin(theta);
 	const float y = glm::sin(phi) * glm::sin(theta);
@@ -364,7 +359,7 @@ void Scene::RayTree::constructRayTree()
 		auto rayImportance = currentRay->getColor();
 
 		// The rayIntersection method adds intersection info to ray
-		bool intersected = rayIntersection(*currentRay);
+		bool intersected = _scene.rayIntersection(*currentRay);
 		if (!intersected)
 		{
 			std::cout << "A ray with no intersections detected\n";
@@ -389,7 +384,7 @@ void Scene::RayTree::constructRayTree()
 		{
 			float rand1 = _rng(_gen);
 			float rand2 = _rng(_gen);
-			if (rand1 + _terminationProbability > 1.f) //Terminate ray
+			if (rand1 + _config.monteCarloTerminationProbability > 1.f) //Terminate ray
 				;
 			else
 			{
@@ -414,7 +409,7 @@ void Scene::RayTree::constructRayTree()
 
 
 				currentRay->getLeft()->setColor(
-					(glm::pi<double>() / (1.0 - _terminationProbability))
+					(glm::pi<double>() / (1.0 - _config.monteCarloTerminationProbability))
 					* currentRay->getColor()
 					* currentIntersectObject->getColor()
 					* roughness);
@@ -588,7 +583,7 @@ Color Scene::RayTree::traverseRayTree(Ray* input) const
 	Color localLightContribution = Color{ 0 };
 	if (intersectObject->getBRDF().getSurfaceType() != BRDF::TRANSPARENT)
 	{
-		localLightContribution = localAreaLightContribution(
+		localLightContribution = _scene.localAreaLightContribution(
 			*currentRay,
 			intersectData._intersectPoint,
 			intersectData._normal,
