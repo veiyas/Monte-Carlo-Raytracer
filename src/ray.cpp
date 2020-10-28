@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 Ray::Ray(Vertex start, Vertex end)
+	: _rayColor{ Color{ 1.0, 1.0, 1.0 } }
 {
 	// DEBUG
 	//if (glm::abs(start.w - 1) > 0.0001 || abs(end.w - 1) > 0.0001)

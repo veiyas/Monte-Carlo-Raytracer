@@ -5,6 +5,7 @@
 
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/geometric.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "basic_types.hpp"
 

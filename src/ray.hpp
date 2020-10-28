@@ -1,10 +1,8 @@
 #pragma once
 
-#include "basic_types.hpp"
 #include "triangle.hpp"
 #include "brdf.hpp"
 #include "shapes.hpp"
-
 
 class Ray
 {
@@ -13,6 +11,7 @@ public:
 	Ray(Vertex start, Vertex end, Color color);
 	Ray(Ray& ray);
 	Ray(Ray&& ray) = default;
+	Ray& operator=(Ray&&) = default;
 
 	void setLeft(Ray&& ray) {
 		if (_intersectionData.has_value() == false)
@@ -33,7 +32,7 @@ public:
 	bool isInsideObject() const { return _isInsideObject; }
 
 	// The color member is used to store importance when casting from camera
-	Color getColor() const { return _rayColor; } //TODO Make this include BRDF contib.
+	Color getColor() const { return _rayColor; }
 	void setColor(const Color color) { _rayColor = color; }
 
 	// Maybe this could be optimized...

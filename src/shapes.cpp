@@ -57,6 +57,22 @@ std::optional<IntersectionData> Tetrahedron::rayIntersection(Ray& ray) const
 	return {};
 }
 
+void Tetrahedron::rayIntersections(Ray& ray, std::vector<IntersectionSurface>& toBeFilled) const
+{
+	for (auto& triangle : _triangles)
+	{
+		float t = triangle.rayIntersection(ray);
+		if (t != -1)
+		{
+			IntersectionData temp{
+				ray.getStart() + Vertex{ ray.getNormalizedDirection() * t, 0.0f },
+				triangle.getNormal(),
+				t };
+			toBeFilled.push_back(std::make_pair(temp, getBRDF().getSurfaceType()));
+		}
+	}
+}
+
 Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position)
 	: SceneObject{ brdf, color },
 	_radius { radius }, _position{ position }
@@ -81,7 +97,7 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 
 	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
 
-	if (expressionInSQRT < -0) //No intersections
+	if (expressionInSQRT < 0) //No intersections
 		return {};
 	else if (expressionInSQRT > -0 && expressionInSQRT < 0) //One intersection
 		d = (-b) / 2;
@@ -94,7 +110,6 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 		{
 			d = otherPossibleD;
 			isInside = true;
-			//std::cout << "kjkl\n";
 		}
 	}
 
@@ -108,8 +123,6 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 	if (isInside)
 		intersectionPointNormal *= -1.0f;
 
-	//std::cout << rayEnd.x + rayDirectionNormalized.x*d << "\n";
-
 	if (d < 0) // Intersection located behind the object
 		return {};
 
@@ -119,6 +132,81 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 		(float)d
 	};
 
+}
+
+void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFilled) const
+{
+	static constexpr float EPSILON = 0.00001;
+	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
+	glm::vec3 rayEnd{ arg.getEnd().x, arg.getEnd().y, arg.getEnd().z };
+	glm::vec3 rayDirectionNormalized = glm::normalize(rayEnd - rayStart);
+
+	glm::vec3 o_c = rayStart - glm::vec3{ _position.x, _position.y, _position.z };
+
+	double a = glm::dot(rayDirectionNormalized, rayDirectionNormalized);
+	double b = glm::dot(o_c, rayDirectionNormalized * 2.0f);
+	double c = glm::dot(o_c, o_c) - _radius * _radius;
+	float d{};
+
+	bool isInside = false;
+
+	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
+
+	if (expressionInSQRT < 0) //No intersections
+		return;
+	else if (expressionInSQRT > -EPSILON && expressionInSQRT < EPSILON) //One intersection
+	{
+		d = (-b) / 2.f;
+		glm::vec3 intersection = rayStart + rayDirectionNormalized * d;
+		glm::vec3 intersectionPointNormal = glm::normalize(glm::vec3{
+			intersection.x - _position.x,
+			intersection.y - _position.y,
+			intersection.z - _position.z });
+		IntersectionData temp{
+			Vertex(intersection, 1.f),
+			intersectionPointNormal,
+			d
+		};
+		toBeFilled.push_back(std::make_pair(temp, getBRDF().getSurfaceType()));
+	}
+	else // Two intersections
+	{
+		d = ((-b) / 2) - glm::sqrt(expressionInSQRT);
+		glm::vec3 intersection1 = rayStart + rayDirectionNormalized * d;
+		glm::vec3 intersectionPointNormal1 = glm::normalize(glm::vec3{
+			intersection1.x - _position.x,
+			intersection1.y - _position.y,
+			intersection1.z - _position.z });
+		IntersectionData temp1{
+			Vertex(intersection1, 1.f),
+			intersectionPointNormal1,
+			d
+		};
+
+		float d2 = ((-b) / 2) + glm::sqrt(expressionInSQRT);
+		glm::vec3 intersection2 = rayStart + rayDirectionNormalized * d2;
+		glm::vec3 intersectionPointNormal2 = glm::normalize(glm::vec3{
+			intersection2.x - _position.x,
+			intersection2.y - _position.y,
+			intersection2.z - _position.z });
+		IntersectionData temp2{
+			Vertex(intersection2, 1.f),
+			intersectionPointNormal2,
+			d2
+		};
+		toBeFilled.push_back(std::make_pair(temp1, getBRDF().getSurfaceType()));
+		toBeFilled.push_back(std::make_pair(temp2, getBRDF().getSurfaceType()));
+	}
+
+	//glm::vec3 intersection = rayStart + rayDirectionNormalized.operator*=(d);
+	//glm::vec3 intersectionPointNormal = glm::normalize(glm::vec3{
+	//	intersection.x - _position.x,
+	//	intersection.y - _position.y,
+	//	intersection.z - _position.z });
+
+	//// Flip normal if intersecting from inside object
+	//if (isInside)
+	//	intersectionPointNormal *= -1.0f;
 }
 
 TriangleObj::TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Color color)
@@ -147,7 +235,8 @@ CeilingLight::CeilingLight(BRDF brdf, float xPos, float yPos)
 	  leftFar{ xPos + 0.5, yPos + 0.5f, 4.999f, 1.f },
 	  leftClose{ xPos - 0.5, yPos + 0.5f, 4.999f, 1.f },
 	  rightFar{ xPos + 0.5, yPos - 0.5f, 4.999f, 1.f },
-	  rightClose{ xPos - 0.5, yPos - 0.5f, 4.999f, 1.f }
+	  rightClose{ xPos - 0.5, yPos - 0.5f, 4.999f, 1.f },
+	  _centerPoints{std::make_pair(xPos, yPos)}
 {
 	TriangleObj t1{ brdf, leftClose, leftFar, rightFar, Direction(0, 0, -1), WHITE_COLOR };
 	TriangleObj t2{ brdf, leftClose, rightFar, rightClose, Direction(0, 0, -1), WHITE_COLOR };

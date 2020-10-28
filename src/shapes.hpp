@@ -1,6 +1,5 @@
 #pragma once
 #define WHITE_COLOR Color(1.0, 1.0, 1.0)
-
 #include <vector>
 #include <iostream>
 #include <optional>
@@ -12,6 +11,7 @@
 #include "brdf.hpp"
 #include "triangle.hpp"
 
+using IntersectionSurface = std::pair<IntersectionData, unsigned>;
 class SceneObject
 {
 public:
@@ -32,6 +32,7 @@ class Tetrahedron : public SceneObject
 public:
 	Tetrahedron(BRDF brdf, float radius, Color color, Vertex position);
 	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
+	void rayIntersections(Ray& ray, std::vector<IntersectionSurface>& toBeFilled) const;
 private:
 	std::vector<Triangle> _triangles;
 };
@@ -42,6 +43,7 @@ public:
 	Sphere(BRDF brdf, float radius, Color color, Vertex position);
 	
 	std::optional<IntersectionData> rayIntersection(Ray& arg) const;
+	void rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFilled) const;
 private:
 	const Vertex _position;
 	const float _radius;
@@ -73,6 +75,9 @@ public:
 	const Vertex leftClose;
 	const Vertex rightFar;
 	const Vertex rightClose;
+
+	std::pair<float, float> getCenterPoints() const { return _centerPoints; }
 private:
 	std::vector<TriangleObj> _triangles;
+	std::pair<float, float> _centerPoints;
 };

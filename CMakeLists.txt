@@ -8,13 +8,14 @@ project("MCRaytracer")
 # Adding the source files here that are compiled for this project
 add_executable(${PROJECT_NAME}
   src/main.cpp
+  src/raycastingfunctions.hpp
   ext/LodePNG/lodepng.cpp
   src/basic_types.hpp
   src/basic_types.cpp
   src/scene.hpp
   src/scene.cpp
-  src/lights.hpp
-  src/lights.cpp
+  src/scenegeometry.hpp
+  src/scenegeometry.cpp
   src/shapes.hpp
   src/shapes.cpp
   src/brdf.hpp
@@ -28,6 +29,8 @@ add_executable(${PROJECT_NAME}
   src/util.hpp
   src/util.cpp
   src/config.hpp
+  src/photonmap.hpp
+  src/photonmap.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
   src
