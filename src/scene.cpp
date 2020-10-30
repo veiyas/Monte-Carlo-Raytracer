@@ -5,96 +5,22 @@
 #include "ray.hpp"
 #include "util.hpp"
 
-Scene::Scene(const Config& conf)
-	: _config{ conf }, _nCalculations{ 0 },
-	  _sceneGeometry{}, _photonMap{ _sceneGeometry }
+Scene::Scene()
+	: _nCalculations{ 0 },
+	  _sceneGeometry{ }
 {
 	_gen = std::mt19937{ std::random_device{}() };
 	_rng = std::uniform_real_distribution<float>{ 0.f, 1.f };
 
-	//_sceneTris.reserve(24);
-
-	////Floor triangles
-	//for (size_t i = 0; i < floorVertices.size(); i += 3)
-	//{
-	//	_sceneTris.emplace_back(
-	//		BRDF::DIFFUSE,
-	//		floorVertices[i], floorVertices[i + 1], floorVertices[i + 2],
-	//		Direction{ 0.f, 0.f, 1.f },
-	//		Color{ 1.0, 1.0, 1.0 });
-	//}
-
-	////Ceiling triangles
-	//for (size_t i = 0; i < ceilingVertices.size(); i += 3)
-	//{
-	//	_sceneTris.emplace_back(
-	//		BRDF::DIFFUSE,
-	//		ceilingVertices[i], ceilingVertices[i + 1], ceilingVertices[i + 2],
-	//		Direction{ 0.f, 0.f, -1.f },
-	//		Color{ 1.0, 1.0, 1.0 });
-	//}
-
-	//// Clown room :))
-	//constexpr Color wallColors[] = {
-	//	Color{ 1.0, 0.0, 0.0 },
-	//	Color{ 0.0, 0.7, 0.0 },
-	//	Color{ 0.0, 0.0, 0.7 },
-	//	Color{ 0.5, 0.5, 0.0 },
-	//	Color{ 0.0, 0.5, 0.5 },
-	//	Color{ 0.5, 0.0, 0.5 },
-	//};
-
-	//constexpr Color colooor = Color{ 0.2, 0.65, 0.92 };
-	//constexpr Color wallColors[6] = {
-	//	Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 },
-	//	Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }
-	//};
-
-	//constexpr Color wallColors[6] = {
-	//	Color{ 1 }, Color{ 1 }, Color{ 1 },
-	//	Color{ 1 }, Color{ 1 }, Color{ 1 },
-	//};
-	//constexpr Color wallColors[6] = {
-	//	Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 },
-	//	Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }
-	//};
-	//constexpr Color wallColors[6] = {
-	//	Color{ 1, 0.0, 0.0 }, Color{ 1, 0.0, 0.0 }, Color{ 1, 0.0, 0.0 },
-	//	Color{ 0.0, 1, 0.0 }, Color{ 0.0, 1, 0.0 }, Color{ 0.0, 1, 0.0 }
-	//};
-
-	////Wall triangles
-	//size_t wallNormalCounter = 0;
-	//for (size_t i = 0; i < wallVertices.size(); i += 3)
-	//{
-	//	//Since there are a lot more vertices than normals
-	//	//Some care has to be taken when reading normals
-	//	if (i % 6 == 0 && i != 0)
-	//		wallNormalCounter++;
-
-	//	_sceneTris.emplace_back(
-	//		BRDF::DIFFUSE,
-	//		wallVertices[i], wallVertices[i + 1], wallVertices[i + 2],
-	//		glm::normalize(wallNormals[wallNormalCounter]), // The normalize is needed with the current values in wallNormals
-	//		wallColors[(i / 3) / 2]);
-
-	//}
-
-	////Ceiling light
-	//_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 6.f, 0.f);
-	////_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f);
+	if (Config::usePhotonMapping())
+		_photonMap = std::make_unique<PhotonMap>(_sceneGeometry);
 
 	auto lightCenter = _sceneGeometry._ceilingLights[0].getCenterPoints();
-	//_pointLight = Vertex{lightCenter.first, lightCenter.second, 5.5f, 1.f};
-//Scene::Scene()
-//	:_sceneGeometry{}, _photonMap{ _sceneGeometry }
-//{
-//>>>>>>> master
 }
 
 Color Scene::raycastScene(Ray& initialRay)
 {
-	RayTree tree{ initialRay, this, _config };
+	RayTree tree{ initialRay, this };
 	tree.raytracePixel();
 	return tree.getPixelColor();
 }
@@ -148,9 +74,9 @@ Color Scene::raycastScene(Ray& initialRay)
 //	return returnValue;
 //}
 
-RayTree::RayTree(Ray& initialRay, Scene* scene, const Config& conf)
+RayTree::RayTree(Ray& initialRay, Scene* scene)
 	: _gen{ std::random_device{}() }, _rng{ 0.f, 1.f },
-	  _scene{ scene }, _config{ conf }
+	  _scene{ scene }
 {
 	_head = std::make_unique<Ray>(initialRay);
 	_treeSize = 1;
@@ -261,7 +187,7 @@ void RayTree::constructRayTree()
 			{
 				float rand1 = _rng(_gen);
 				float rand2 = _rng(_gen);
-				if (rand1 + _config.monteCarloTerminationProbability > 1.f) //Terminate ray
+				if (rand1 + Config::monteCarloTerminationProbability() > 1.f) //Terminate ray
 					;
 				else
 				{
@@ -273,7 +199,7 @@ void RayTree::constructRayTree()
 						currentIntersection._normal);
 
 					currentRay->getLeft()->setColor(
-						(glm::pi<double>() / (1.0 - _config.monteCarloTerminationProbability))
+						(glm::pi<double>() / (1.0 - Config::monteCarloTerminationProbability()))
 						* currentRay->getColor()
 						* currentIntersectObject->getColor()
 						* roughness);
@@ -436,7 +362,7 @@ Color RayTree::traverseRayTree(Ray* input) const
 
 
 	//// TESTING: Visualizing photon map, dont remove plz ==============================
-	//bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(intersectData._intersectPoint);
+	//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
 	//if (!shadowPhotonsPresent)
 	//{
 	//	auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
@@ -444,7 +370,7 @@ Color RayTree::traverseRayTree(Ray* input) const
 	//		currentRay->getNormalizedDirection(),
 	//		computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 4.999f, 1.0f)), // This is not actually correct
 	//		intersectData._normal);
-	//	double photonContrib = _scene->_photonMap.getPhotonFlux(intersectData._intersectPoint);
+	//	double photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
 	//	if (/*photonContrib < 0 || */roughness < 0)
 	//	{
 	//		//std::cout << "oh no\n";
@@ -464,29 +390,41 @@ Color RayTree::traverseRayTree(Ray* input) const
 
 	if (intersectObject->getBRDF().getSurfaceType() != BRDF::TRANSPARENT)
 	{
-		auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
-		bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(intersectData._intersectPoint);
-		if (!shadowPhotonsPresent)
+		if (Config::usePhotonMapping())
 		{
-			double roughness = intersectObject->accessBRDF().computeOrenNayar(
-				currentRay->getNormalizedDirection(),
-				computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 4.999f, 1.0f)), // This is not actually correct
-				intersectData._normal);
-			roughness = glm::clamp(roughness, 0.0, 1.0);
-			double photonContrib = _scene->_photonMap.getPhotonFlux(intersectData._intersectPoint);
-			localLightContribution = intersectObject->getColor() * photonContrib * roughness;
-		}
-		// TODO There is huge mismatch in magnitude
-		//else
-		//{
-		//	localLightContribution = localAreaLightContribution(
-		//		*currentRay,
-		//		intersectData._intersectPoint,
-		//		intersectData._normal,
-		//		intersectObject,
-		//		_scene->_sceneGeometry);
+			auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
+			bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
+			if (!shadowPhotonsPresent)
+			{
+				double roughness = intersectObject->accessBRDF().computeOrenNayar(
+					currentRay->getNormalizedDirection(),
+					computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 4.999f, 1.0f)), // This is not actually correct
+					intersectData._normal);
+				roughness = glm::clamp(roughness, 0.0, 1.0);
+				double photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
+				localLightContribution = intersectObject->getColor() * photonContrib * roughness;
+			}
+			else // TODO There is huge mismatch in magnitude
+			{
+				localLightContribution = localAreaLightContribution(
+					*currentRay,
+					intersectData._intersectPoint,
+					intersectData._normal,
+					intersectObject,
+					_scene->_sceneGeometry);
 
-		//}
+			}
+		}
+		else
+		{
+			localLightContribution = localAreaLightContribution(
+				*currentRay,
+				intersectData._intersectPoint,
+				intersectData._normal,
+				intersectObject,
+				_scene->_sceneGeometry);
+
+		}
 	}
 
 	if (left == nullptr && right == nullptr)

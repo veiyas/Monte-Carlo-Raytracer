@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME}
   src/util.hpp
   src/util.cpp
   src/config.hpp
+  src/config.cpp
   src/photonmap.hpp
   src/photonmap.cpp
 )

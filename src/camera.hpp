@@ -10,7 +10,7 @@
 class Camera
 {
 public:
-	Camera(const Config& config);
+	Camera();
 
 	void render(Scene& scene);
 	void sqrtAllPixels();
@@ -19,8 +19,6 @@ public:
 private:
 	const Vertex _eyePoint1{ -2.0f, 0.0f, 0.0f, 1.0f };
 	const Vertex _eyePoint2{ -1.0f, 0.0f, 0.0f, 1.0f };
-
-	const Config& _config;
 
 	// The number of pixels in each direction
 	const int WIDTH;

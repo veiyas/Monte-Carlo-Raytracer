@@ -12,20 +12,10 @@ static constexpr float PI = 3.1415f;
 static constexpr float TWO_PI = 6.28318f;
 static constexpr float _airIndex = 1.f;
 static constexpr float _glassIndex = 1.5f;
-static constexpr float _terminationProbability = 0.2f;
 static constexpr float _reflectionOffset = 0.001;
 
 // TEMPORARY DECLARATIONS
 inline bool pathIsVisible(Ray& ray, const Direction& normal, const SceneGeometry& scene);
-// TODO THIS IS HIGHLY TEMPORARY AND TERRIBLE
-const Config _config = {
-	200,      // Resolution
-	10,       // Spp
-	false,    // Eye Toggle
-
-	0.2f,     // Termination probability
-	1,        // Num shadowRays per intersection
-};
 
 /************************
 	Implementations
@@ -219,7 +209,7 @@ inline Ray generateRandomReflectedRay(
 	// Generate random azimuth (phi) and inclination (theta)
 	// Phi is caled to compensate for decreased range of rand1 since the ray is terminated 
 	// russian roulette for high values for rand1
-	const float phi = (glm::two_pi<float>() / (1 - _config.monteCarloTerminationProbability)) * rand1;
+	const float phi = (glm::two_pi<float>() / (1 - Config::monteCarloTerminationProbability())) * rand1;
 	const float theta = glm::asin(glm::sqrt(rand2));
 	const float x = glm::cos(phi) * glm::sin(theta);
 	const float y = glm::sin(phi) * glm::sin(theta);
@@ -302,7 +292,7 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 
 	double acc = 0;
 
-	for (size_t i = 0; i < _config.numShadowRaysPerIntersection; i++)
+	for (size_t i = 0; i < Config::numShadowRaysPerIntersection(); i++)
 	{
 		float rand1 = _rng(_gen);
 		float rand2 = _rng(_gen);
@@ -338,7 +328,7 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 	double lightArea = 1;
 	// TODO Is it correct that L0 is the color of the light?
 	Color L0 = light.getColor();
-	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / _config.numShadowRaysPerIntersection));
+	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / Config::numShadowRaysPerIntersection()));
 
 	return returnValue;
 }

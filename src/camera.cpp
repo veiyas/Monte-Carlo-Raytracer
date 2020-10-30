@@ -10,10 +10,9 @@
 #include "glm/gtx/string_cast.hpp"
 #include "util.hpp"
 
-Camera::Camera(const Config& conf)
-	: _config{ conf },
-	  WIDTH{ conf.resolution }, HEIGHT{ conf.resolution },
-	  pixelSideLength{ 2.0f / conf.resolution },
+Camera::Camera()
+	: WIDTH{ Config::resolution() }, HEIGHT{ Config::resolution() },
+	  pixelSideLength{ 2.0f / Config::resolution() },
 	  _gen{ std::random_device{}() }, _rng{ 0.f, 1.f }
 {
 }
@@ -58,7 +57,7 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 
 	for (int col = 0; col < WIDTH; ++col)
 	{
-		for (int i = 0; i < _config.samplesPerPixel; i++)
+		for (int i = 0; i < Config::samplesPerPixel(); i++)
 		{
 			float yOffset = _rng(_gen);
 			float zOffset = _rng(_gen);
@@ -70,7 +69,7 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 				1.0f
 			};
 
-			auto ray = std::make_shared<Ray>(_config.eyeToggle ? _eyePoint1 : _eyePoint2, pixelPoint, Color{ 1.0, 1.0, 1.0 });
+			auto ray = std::make_shared<Ray>(Config::eyeToggle() ? _eyePoint1 : _eyePoint2, pixelPoint, Color{ 1.0, 1.0, 1.0 });
 
 			_pixels[row][col].addRay(ray);
 
@@ -88,7 +87,7 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 			//}
 
 		}
-		_pixels[row][col]._color /= _config.samplesPerPixel;
+		_pixels[row][col]._color /= Config::samplesPerPixel();
 	}
 }
 

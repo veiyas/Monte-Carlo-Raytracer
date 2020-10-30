@@ -11,20 +11,16 @@
 
 int main()
 {
+	auto& config = Config::instance();
+	config.setResolution(200);
+	config.setSamplesPerPixel(100);
+	config.setMonteCarloTerminationProbability(0.2f);
+	config.setNumShadowRaysPerIntersection(1);
+	config.setUsePhotonMapping(true);
 
-	// THIS IS NOT COMPLETELY WORKING RIGHT NOW
-	const Config _config = {
-		200,      // Resolution
-		100,       // Spp
-		false,    // Eye Toggle
+	Scene scene;
 
-		0.2f,     // Termination probability
-		1,        // Num shadowRays per intersection
-	};
-
-	Scene scene{ _config };
-
-	Camera testCamera{ _config };
+	Camera testCamera;
 	testCamera.render(scene);
 
 	testCamera.sqrtAllPixels();
@@ -34,7 +30,7 @@ int main()
 
 	// Save under unique name as well, to document progress
 	std::string filename = "Renders/MC_" + friendlyTimeStamp() + "_" +
-		std::to_string(_config.samplesPerPixel) + "spp" + ".png";
+		std::to_string(Config::samplesPerPixel()) + "spp" + ".png";
 	testCamera.createPNG(filename);
 
 	return 0;
