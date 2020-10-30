@@ -34,7 +34,7 @@ public:
 
 	SceneGeometry _sceneGeometry;
 	PhotonMap _photonMap;
-	Vertex _pointLight;
+	//Vertex _pointLight;
 
 private:
 	//std::vector<TriangleObj> _sceneTris;
@@ -74,45 +74,6 @@ private:
 	//static Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
 	//static Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint, bool insideObject);
 	//Direction computeShadowRayDirection(const Vertex& point);
-
-	//class RayTree
-	//{
-	//public:
-	//	RayTree(Ray& initialRay, const Scene& scene);
-	//	void raytracePixel();
-	//	Color getPixelColor() const { return _finalColor; }
-
-	//private:
-	//	const Config& _config;
-	//	std::unique_ptr<Ray> _head;
-	//	Color _finalColor;
-	//	size_t _treeSize;
-	//	const Scene& _scene;
-	//	constexpr static size_t _maxTreeSize = 512;
-
-	//	//Random generator stuff for monte carlo
-	//	std::mt19937 _gen;
-	//	std::uniform_real_distribution<float> _rng;
-
-
-	//	void constructRayTree();
-	//	Color traverseRayTree(Ray* input) const;
-
-	//	void attachReflected(const IntersectionData& intData, Ray* currentRay) const;
-	//	// Note: rand1 is the same value that is used for ray termination!
-	//	void attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay, float rand1, float rand2);
-	//	void attachRefracted(const IntersectionData& intData, Ray* currentRay) const;
-	//};
-//=======
-
-	//static long long unsigned _nCalculations;
-private:
-
-	//static constexpr float _ambientContribution = 0.2f;
-	//static double shadowRayContribution(const Vertex& point, const Direction& normal);
-	//static bool objectIsVisible(const Ray& ray, const SceneObject& obj, const std::optional<IntersectionData>& input, const Direction& normal);
-	//static Direction computeShadowRayDirection(const Vertex& point);
-//>>>>>>> master
 };
 
 class RayTree
@@ -124,9 +85,9 @@ public:
 	Color getPixelColor() const { return _finalColor; }
 
 
-	// TODO MOVE
-	Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal,
-		const Vertex& intersectPoint, float rand1, float rand2);
+	//// TODO MOVE
+	//Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal,
+	//	const Vertex& intersectPoint, float rand1, float rand2);
 
 private:
 	std::unique_ptr<Ray> _head;

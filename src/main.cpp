@@ -11,9 +11,11 @@
 
 int main()
 {
+
+	// THIS IS NOT COMPLETELY WORKING RIGHT NOW
 	const Config _config = {
 		200,      // Resolution
-		10,       // Spp
+		100,       // Spp
 		false,    // Eye Toggle
 
 		0.2f,     // Termination probability

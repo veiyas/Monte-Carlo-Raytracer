@@ -25,10 +25,15 @@ SceneGeometry::SceneGeometry()
 			Color{ 1.0, 1.0, 1.0 });
 	}
 
-	constexpr Color colooor = Color{ 0.2, 0.65, 0.92 };
+	//constexpr Color colooor = Color{ 0.2, 0.65, 0.92 };
+	//constexpr Color wallColors[6] = {
+	//	Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 },
+	//	Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }
+	//};
+
 	constexpr Color wallColors[6] = {
-		Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 }, Color{ 0.2, 0.65, 0.92 },
-		Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }, Color{ 0.54, 0.79, 0.65 }
+		Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 }, Color{ 1, 0.2, 0.2 },
+		Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }, Color{ 0.2, 1, 0.2 }
 	};
 
 	//Wall triangles
@@ -51,10 +56,10 @@ SceneGeometry::SceneGeometry()
 	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f);
 
 	//// Algots scene
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::DIFFUSE }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 8.f, 0.f, -2.5f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, 0.f, 1.f });
-	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, 3.5f, -3.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, 3.5f, -3.f, 1.f });
 	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, -3.5f, -3.f, 1.f });
 	std::cout << "done!\n";
 }

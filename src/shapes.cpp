@@ -136,7 +136,7 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 
 void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFilled) const
 {
-	static constexpr float EPSILON = 0.00001;
+	//static constexpr float EPSILON = 0.00001;
 	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
 	glm::vec3 rayEnd{ arg.getEnd().x, arg.getEnd().y, arg.getEnd().z };
 	glm::vec3 rayDirectionNormalized = glm::normalize(rayEnd - rayStart);
@@ -148,13 +148,11 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 	double c = glm::dot(o_c, o_c) - _radius * _radius;
 	float d{};
 
-	bool isInside = false;
-
 	double expressionInSQRT = glm::pow(b / 2, 2) - a * c;
 
 	if (expressionInSQRT < 0) //No intersections
 		return;
-	else if (expressionInSQRT > -EPSILON && expressionInSQRT < EPSILON) //One intersection
+	else if (expressionInSQRT > -0 && expressionInSQRT < 0) //One intersection
 	{
 		d = (-b) / 2.f;
 		glm::vec3 intersection = rayStart + rayDirectionNormalized * d;
@@ -167,7 +165,8 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 			intersectionPointNormal,
 			d
 		};
-		toBeFilled.push_back(std::make_pair(temp, getBRDF().getSurfaceType()));
+		if (d > 0)
+			toBeFilled.push_back(std::make_pair(temp, getBRDF().getSurfaceType()));
 	}
 	else // Two intersections
 	{
@@ -194,8 +193,16 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 			intersectionPointNormal2,
 			d2
 		};
-		toBeFilled.push_back(std::make_pair(temp1, getBRDF().getSurfaceType()));
-		toBeFilled.push_back(std::make_pair(temp2, getBRDF().getSurfaceType()));
+
+		if (d < 0 && d2 > 0) // The intersecting ray is coming from inside the object
+		{
+			temp1._normal *= -1; // Flip normal
+		}
+
+		if (d > 0)
+			toBeFilled.push_back(std::make_pair(temp1, getBRDF().getSurfaceType()));
+		if (d2 > 0)
+			toBeFilled.push_back(std::make_pair(temp2, getBRDF().getSurfaceType()));
 	}
 
 	//glm::vec3 intersection = rayStart + rayDirectionNormalized.operator*=(d);
@@ -257,5 +264,6 @@ std::optional<IntersectionData> CeilingLight::rayIntersection(Ray& arg) const
 	else
 		return intersection1->_t < intersection2->_t ? intersection1 : intersection2;
 
+	// TODO This code is unrechable!?
 	return {}; //No intersections
 }

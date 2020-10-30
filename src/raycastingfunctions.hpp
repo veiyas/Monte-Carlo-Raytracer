@@ -13,7 +13,7 @@ static constexpr float TWO_PI = 6.28318f;
 static constexpr float _airIndex = 1.f;
 static constexpr float _glassIndex = 1.5f;
 static constexpr float _terminationProbability = 0.2f;
-static constexpr float _reflectionOffset = 0.00001;
+static constexpr float _reflectionOffset = 0.001;
 
 // TEMPORARY DECLARATIONS
 inline bool pathIsVisible(Ray& ray, const Direction& normal, const SceneGeometry& scene);
@@ -125,7 +125,7 @@ inline Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, 
 {
 	Direction incomingRayDirection = incomingRay.getNormalizedDirection();
 	//Angle between normal and incoming ray
-	float angle = glm::angle(normal, incomingRayDirection);
+	//float angle = glm::angle(normal, incomingRayDirection);
 
 	Direction reflectedDirection =
 		incomingRayDirection - 2.f * (glm::dot(incomingRayDirection, normal)) * normal;
@@ -186,14 +186,14 @@ inline float randInclination(std::mt19937& _gen, std::uniform_real_distribution<
 }
 
 inline Ray generateRandomReflectedRay(
-	const Direction& initialDirection,
+	const Direction& initialDirection, 
 	const Direction& normal,
 	const Vertex& intersectPoint,
-	std::mt19937& _gen,
-	std::uniform_real_distribution<float>& _rng)
+	float rand1, float rand2)
 {
+
 	//Determine local coordinate system and transformations matrices for it
-	glm::vec3 Z{ normal };
+	const glm::vec3 Z{ normal };
 	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
 	const glm::vec3 Y = glm::cross(-X, Z);
 	/* GLM: Column major order
@@ -216,23 +216,22 @@ inline Ray generateRandomReflectedRay(
 	};
 	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
 
-	//Generate random azimuth (phi) and inclination (theta)
-	const float x = glm::cos(randAzimuth(_gen, _rng)) * glm::sin(randInclination(_gen, _rng));
-	const float y = glm::sin(randAzimuth(_gen, _rng)) * glm::sin(randInclination(_gen, _rng));
-	const float z = glm::cos(randInclination(_gen, _rng));
-
-	//OK So this works...
-	Z = glm::rotateX(Z, randInclination(_gen, _rng));
-	//Z = glm::rotateY(Z, randInclination(_gen, _rng));
-	Z = glm::rotateZ(Z, randAzimuth(_gen, _rng));
+	// Generate random azimuth (phi) and inclination (theta)
+	// Phi is caled to compensate for decreased range of rand1 since the ray is terminated 
+	// russian roulette for high values for rand1
+	const float phi = (glm::two_pi<float>() / (1 - _config.monteCarloTerminationProbability)) * rand1;
+	const float theta = glm::asin(glm::sqrt(rand2));
+	const float x = glm::cos(phi) * glm::sin(theta);
+	const float y = glm::sin(phi) * glm::sin(theta);
+	const float z = glm::cos(theta);
 
 	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
 
 	//Debug helper
 	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
 
-	//return Ray{ intersectPoint, globalReflected };
-	return Ray{ intersectPoint, glm::vec4(glm::normalize(Z), 1.f) };
+	glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 0);
+	return Ray{ intersectPoint + offset, globalReflected };
 }
 
 inline Direction computeShadowRayDirection(const Vertex& point, const Vertex& lightPoint)

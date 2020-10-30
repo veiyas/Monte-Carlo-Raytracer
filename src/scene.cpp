@@ -85,7 +85,7 @@ Scene::Scene(const Config& conf)
 	////_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f);
 
 	auto lightCenter = _sceneGeometry._ceilingLights[0].getCenterPoints();
-	_pointLight = Vertex{lightCenter.first, lightCenter.second, 5.5f, 1.f};
+	//_pointLight = Vertex{lightCenter.first, lightCenter.second, 5.5f, 1.f};
 //Scene::Scene()
 //	:_sceneGeometry{}, _photonMap{ _sceneGeometry }
 //{
@@ -162,51 +162,51 @@ void RayTree::raytracePixel()
 	_finalColor = traverseRayTree(_head.get());
 }
 
-// TODO Replace with raycastingfunctions
-Ray RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint, float rand1, float rand2)
-{
-
-	//Determine local coordinate system and transformations matrices for it
-	const glm::vec3 Z{ normal };
-	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
-	const glm::vec3 Y = glm::cross(-X, Z);
-	/* GLM: Column major order
-	 0  4  8  12
-	 1  5  9  13
-	 2  6 10  14
-	 3  7 11  15
-	*/
-	const glm::mat4 toLocalCoord =
-		glm::mat4{
-		X.x, Y.x, Z.x, 0.f,
-		X.y, Y.y, Z.y, 0.f,
-		X.z, Y.z, Z.z, 0.f,
-		0.f, 0.f, 0.f, 1.f } *
-		glm::mat4{
-		1.f, 0.f, 0.f, 0.f,
-		0.f, 1.f, 0.f, 0.f,
-		0.f, 0.f, 1.f, 0.f,
-		-intersectPoint.x, -intersectPoint.y, -intersectPoint.z, 1.f
-	};
-	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
-
-	// Generate random azimuth (phi) and inclination (theta)
-	// Phi is caled to compensate for decreased range of rand1 since the ray is terminated 
-	// russian roulette for high values for rand1
-	const float phi = (glm::two_pi<float>() / (1 - _config.monteCarloTerminationProbability)) * rand1;
-	const float theta = glm::asin(glm::sqrt(rand2));
-	const float x = glm::cos(phi) * glm::sin(theta);
-	const float y = glm::sin(phi) * glm::sin(theta);
-	const float z = glm::cos(theta);
-
-	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
-
-	//Debug helper
-	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
-
-	glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 0);
-	return Ray{ intersectPoint + offset, globalReflected };
-}
+//// TODO Replace with raycastingfunctions
+//Ray RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint, float rand1, float rand2)
+//{
+//
+//	//Determine local coordinate system and transformations matrices for it
+//	const glm::vec3 Z{ normal };
+//	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
+//	const glm::vec3 Y = glm::cross(-X, Z);
+//	/* GLM: Column major order
+//	 0  4  8  12
+//	 1  5  9  13
+//	 2  6 10  14
+//	 3  7 11  15
+//	*/
+//	const glm::mat4 toLocalCoord =
+//		glm::mat4{
+//		X.x, Y.x, Z.x, 0.f,
+//		X.y, Y.y, Z.y, 0.f,
+//		X.z, Y.z, Z.z, 0.f,
+//		0.f, 0.f, 0.f, 1.f } *
+//		glm::mat4{
+//		1.f, 0.f, 0.f, 0.f,
+//		0.f, 1.f, 0.f, 0.f,
+//		0.f, 0.f, 1.f, 0.f,
+//		-intersectPoint.x, -intersectPoint.y, -intersectPoint.z, 1.f
+//	};
+//	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
+//
+//	// Generate random azimuth (phi) and inclination (theta)
+//	// Phi is caled to compensate for decreased range of rand1 since the ray is terminated 
+//	// russian roulette for high values for rand1
+//	const float phi = (glm::two_pi<float>() / (1 - _config.monteCarloTerminationProbability)) * rand1;
+//	const float theta = glm::asin(glm::sqrt(rand2));
+//	const float x = glm::cos(phi) * glm::sin(theta);
+//	const float y = glm::sin(phi) * glm::sin(theta);
+//	const float z = glm::cos(theta);
+//
+//	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
+//
+//	//Debug helper
+//	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
+//
+//	glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 0);
+//	return Ray{ intersectPoint + offset, globalReflected };
+//}
 
 void RayTree::constructRayTree()
 {
@@ -247,17 +247,17 @@ void RayTree::constructRayTree()
 		}
 		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
-			bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(currentIntersection._intersectPoint);
-			if (!shadowPhotonsPresent)
-			{
-				double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
-					currentRay->getNormalizedDirection(),
-					computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
-					currentIntersection._normal);
-				double photonContrib = _scene->_photonMap.getPhotonFlux(currentIntersection._intersectPoint);
-				currentRay->setColor(currentIntersectObject->getColor() * photonContrib * roughness);
-			}
-			else
+			//bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(currentIntersection._intersectPoint);
+			//if (!shadowPhotonsPresent)
+			//{
+			//	double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
+			//		currentRay->getNormalizedDirection(),
+			//		computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
+			//		currentIntersection._normal);
+			//	double photonContrib = _scene->_photonMap.getPhotonFlux(currentIntersection._intersectPoint);
+			//	currentRay->setColor(currentIntersectObject->getColor() * photonContrib * roughness);
+			//}
+			//else
 			{
 				float rand1 = _rng(_gen);
 				float rand2 = _rng(_gen);
@@ -427,14 +427,66 @@ Color RayTree::traverseRayTree(Ray* input) const
 	auto& intersectObject = currentRay->getIntersectedObject().value();
 
 	Color localLightContribution = Color{ 0 };
+
+
+
+
+
+
+
+
+	//// TESTING: Visualizing photon map, dont remove plz ==============================
+	//bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(intersectData._intersectPoint);
+	//if (!shadowPhotonsPresent)
+	//{
+	//	auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
+	//	double roughness = intersectObject->accessBRDF().computeOrenNayar(
+	//		currentRay->getNormalizedDirection(),
+	//		computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 4.999f, 1.0f)), // This is not actually correct
+	//		intersectData._normal);
+	//	double photonContrib = _scene->_photonMap.getPhotonFlux(intersectData._intersectPoint);
+	//	if (/*photonContrib < 0 || */roughness < 0)
+	//	{
+	//		//std::cout << "oh no\n";
+	//		return Color{ 0,0,1 };
+	//	}
+	//	return intersectObject->getColor() * photonContrib * roughness;
+	//}
+	//else return Color{ 1,0,1 };
+	//// ================================================================================
+
+
+
+
+
+
+
+
 	if (intersectObject->getBRDF().getSurfaceType() != BRDF::TRANSPARENT)
 	{
-		localLightContribution = localAreaLightContribution(
-			*currentRay,
-			intersectData._intersectPoint,
-			intersectData._normal,
-			intersectObject,
-			_scene->_sceneGeometry);
+		auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
+		bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(intersectData._intersectPoint);
+		if (!shadowPhotonsPresent)
+		{
+			double roughness = intersectObject->accessBRDF().computeOrenNayar(
+				currentRay->getNormalizedDirection(),
+				computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 4.999f, 1.0f)), // This is not actually correct
+				intersectData._normal);
+			roughness = glm::clamp(roughness, 0.0, 1.0);
+			double photonContrib = _scene->_photonMap.getPhotonFlux(intersectData._intersectPoint);
+			localLightContribution = intersectObject->getColor() * photonContrib * roughness;
+		}
+		// TODO There is huge mismatch in magnitude
+		//else
+		//{
+		//	localLightContribution = localAreaLightContribution(
+		//		*currentRay,
+		//		intersectData._intersectPoint,
+		//		intersectData._normal,
+		//		intersectObject,
+		//		_scene->_sceneGeometry);
+
+		//}
 	}
 
 	if (left == nullptr && right == nullptr)
