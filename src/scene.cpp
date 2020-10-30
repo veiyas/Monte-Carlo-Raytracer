@@ -162,7 +162,7 @@ void RayTree::constructRayTree()
 		const auto& currentSurfaceType = currentIntersectObject->getBRDF().getSurfaceType();
 
 		if (currentSurfaceType == BRDF::LIGHT) // Terminate on light
-			;
+			currentRay->setColor(WHITE_COLOR);
 		else if (currentSurfaceType == BRDF::REFLECTOR)
 		{
 			// All importance is reflected
@@ -173,15 +173,15 @@ void RayTree::constructRayTree()
 		}
 		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
-			//bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(currentIntersection._intersectPoint);
+			//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint);
 			//if (!shadowPhotonsPresent)
 			//{
 			//	double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
 			//		currentRay->getNormalizedDirection(),
 			//		computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
 			//		currentIntersection._normal);
-			//	double photonContrib = _scene->_photonMap.getPhotonFlux(currentIntersection._intersectPoint);
-			//	currentRay->setColor(currentIntersectObject->getColor() * photonContrib * roughness);
+			//	double photonContrib = _scene->_photonMap->getPhotonFlux(currentIntersection._intersectPoint);
+			//	currentRay->setColor(currentIntersectObject->getColor() * photonContrib);
 			//}
 			//else
 			{
