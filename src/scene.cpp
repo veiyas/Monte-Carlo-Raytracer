@@ -367,9 +367,9 @@ Color RayTree::traverseRayTree(Ray* input) const
 	//{
 	//	auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
 	//	double roughness = intersectObject->accessBRDF().computeOrenNayar(
-	//		currentRay->getNormalizedDirection(),
-	//		computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 4.999f, 1.0f)), // This is not actually correct
-	//		intersectData._normal);
+	//		-currentRay->getNormalizedDirection(),
+	//		computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 5.0f, 1.0f)),
+	//		glm::normalize(intersectData._normal));
 	//	double photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
 	//	if (/*photonContrib < 0 || */roughness < 0)
 	//	{
@@ -397,8 +397,8 @@ Color RayTree::traverseRayTree(Ray* input) const
 			if (!shadowPhotonsPresent)
 			{
 				double roughness = intersectObject->accessBRDF().computeOrenNayar(
-					currentRay->getNormalizedDirection(),
-					computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 4.999f, 1.0f)), // This is not actually correct
+					-currentRay->getNormalizedDirection(),
+					computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 5.0f, 1.0f)), //TODO This is not quite correct (but close)
 					intersectData._normal);
 				roughness = glm::clamp(roughness, 0.0, 1.0);
 				double photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
@@ -467,24 +467,14 @@ void RayTree::attachReflected(const IntersectionData& intData, Ray* currentRay) 
 	currentRay->getLeft()->setParent(currentRay);
 }
 
-//<<<<<<< HEAD
 void RayTree::attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay, float rand1, float rand2)
-//=======
-//void RayTree::attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay)
-//>>>>>>> master
 {
 	Ray reflectedRay = generateRandomReflectedRay(
 		currentRay->getNormalizedDirection(),
 		intData._normal,
 		intData._intersectPoint,
-//<<<<<<< HEAD
 		rand1, rand2);
 	reflectedRay.setInsideObject(currentRay->isInsideObject()); // TODO Is this ever true?
-//=======
-//		_gen,
-//		_rng);
-//	reflectedRay.setInsideObject(currentRay->isInsideObject());
-//>>>>>>> master
 
 	currentRay->setLeft(std::move(reflectedRay));
 	currentRay->getLeft()->setParent(currentRay);
@@ -497,8 +487,6 @@ void RayTree::attachRefracted(const IntersectionData& intData, Ray* currentRay) 
 		*currentRay,
 		intData._intersectPoint,
 		currentRay->isInsideObject());
-
-	// If refracting the medium changes
 
 	currentRay->setRight(std::move(refractedRay));
 	currentRay->getRight()->setParent(currentRay);
