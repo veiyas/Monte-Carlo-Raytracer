@@ -46,7 +46,7 @@ void Camera::render(Scene& scene)
 	auto endTime = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> duration = endTime - startTime;
 	std::cout << "\nRendering finished, " << scene.getNCalculations() <<
-		" calculations completed in " << duration.count() << " seconds\n\n";
+		" calculations completed in " << durationFormat(duration) << "\n\n";
 }
 
 void Camera::renderThreadFunction(int row, Scene& scene)

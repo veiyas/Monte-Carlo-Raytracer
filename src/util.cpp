@@ -19,11 +19,23 @@ bool someComponent(Color col, std::function<bool(double)> func)
 
 std::string friendlyTimeStamp()
 {
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
+	auto t = std::time(nullptr);
+	auto tm = *std::localtime(&t);
 
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%d-%m-%Y_%H-%M-%S");
+	std::ostringstream oss;
+	oss << std::put_time(&tm, "%d-%m-%Y_%H-%M-%S");
 
-    return oss.str();
+	return oss.str();
+}
+
+std::string durationFormat(std::chrono::duration<double> duration)
+{
+	double elapsedTime = duration.count();
+	int hoursElapsed = elapsedTime / (60 * 60);
+	int minutesElapsed = (int(elapsedTime) % (60 * 60)) / 60;
+	int secondsElapsed = int(elapsedTime) % 60;
+	
+	return std::to_string(hoursElapsed) + "h:"
+	     + std::to_string(minutesElapsed) + "m:"
+	     + std::to_string(secondsElapsed) + "s";
 }

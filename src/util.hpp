@@ -11,3 +11,5 @@ bool allComponents(Color col, std::function<bool(double)> func);
 bool someComponent(Color col, std::function<bool(double)> func);
 
 std::string friendlyTimeStamp();
+
+std::string durationFormat(std::chrono::duration<double> duration);
