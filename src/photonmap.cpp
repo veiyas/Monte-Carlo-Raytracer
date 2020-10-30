@@ -172,7 +172,7 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData&
 	float rand1 = _rng(_gen);
 	float rand2 = _rng(_gen);
 
-	if (rand1 + Config::monteCarloTerminationProbability() > 1.f)
+	if (rand1 + Config::monteCarloTerminationProbability() < 1.f)
 	{
 		Photon generatedPhoton = generateRandomReflectedRay(
 			currentPhoton.getNormalizedDirection(),
