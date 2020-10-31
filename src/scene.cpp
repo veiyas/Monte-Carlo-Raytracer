@@ -338,7 +338,7 @@ Color RayTree::traverseRayTree(Ray* input) const
 	Ray* currentRay = input;
 
 	// DEBUG
-	if (someComponent(currentRay->getColor(), isnan<double>))
+	if (someComponent(currentRay->getColor(), static_cast<bool(*)(double)>(std::isnan)))
 		std::cout << "isnan\n";
 
 	Ray* left = currentRay->getLeft();
