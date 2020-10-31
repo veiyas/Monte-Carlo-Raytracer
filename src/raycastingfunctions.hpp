@@ -292,7 +292,7 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 
 	double acc = 0;
 
-	for (size_t i = 0; i < static_cast<size_t>(Config::numShadowRaysPerIntersection()); i++)
+	for (size_t i = 0; i < Config::numShadowRaysPerIntersection(); i++)
 	{
 		float rand1 = _rng(_gen);
 		float rand2 = _rng(_gen);

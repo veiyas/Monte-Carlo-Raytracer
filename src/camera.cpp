@@ -98,8 +98,8 @@ void Camera::sqrtAllPixels()
 		for (size_t col = 0; col < WIDTH; ++col)
 		{
 			const Color& color = _pixels[row][col]._color;
-			if (someComponent(color, static_cast<bool(*)(double)>(&std::isnan)) ||
-				someComponent(color, static_cast<bool(*)(double)>(&std::isinf)) ||
+			if (someComponent(color, isnan<double>) ||
+				someComponent(color, isinf<double>) ||
 				someComponent(color, [](double val) { return val < 0; }))
 				std::cout << "Problem pixel detected, value: " << glm::to_string(color) << "\n";
 
@@ -120,7 +120,7 @@ void Camera::createPNG(const std::string& file)
 			if (maxOfPixel > maxIntensity)
 				maxIntensity = maxOfPixel;
 
-			if (someComponent(color,  static_cast<bool(*)(double)>(&std::isnan)))
+			if (someComponent(color, isnan<double>))
 				std::cout << "Pixel with NaN detected, value: " << glm::to_string(color) << "\n";
 		}
 	}

@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <random>
-#include <pthread.h>
 
 #include "basic_types.hpp"
 #include "scene.hpp"

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-project("MCRaytracer" C CXX)
+project("MCRaytracer")
 #
 # Add the libraries that this application depends on
 
@@ -39,12 +39,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ext/LodePNG
   ext/kdtree++
 )
-#SET(GCC_COVERAGE_LINK_FLAGS "-pthread")
 #
 # Setting some compile settings for the project
 #
-set(CMAKE_CXX_FLAGS "-pthread -no-pie")
-
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 if (MSVC)
