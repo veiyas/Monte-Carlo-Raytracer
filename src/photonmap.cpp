@@ -56,6 +56,7 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 					{
 						const IntersectionData tempInter = pIntersects[0].first;
 						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
+						reflectedPhoton.setColor(currentP.getColor()); //Radiance carries over
 						photonQueue.push(std::move(reflectedPhoton));
 
 						//std::cout << "reflection, i = " << i << ' ' << &currentP.getIntersectedObject()
@@ -77,7 +78,7 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 						{
 							Photon refractedPhoton = computeRefractedRay(
 								tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
-							refractedPhoton.setColor(refractedPhoton.getColor() * (1.f - reflectionCoeff));
+							refractedPhoton.setColor(currentP.getColor() * (1.f - reflectionCoeff));
 
 							photonQueue.push(std::move(refractedPhoton));
 						}
@@ -180,6 +181,9 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData&
 			inter._intersectPoint,
 			rand1,
 			rand2);
+
+		//Radiance carries over
+		generatedPhoton.setColor(currentPhoton.getColor());
 		queue.push(std::move(generatedPhoton));
 	}
 }
