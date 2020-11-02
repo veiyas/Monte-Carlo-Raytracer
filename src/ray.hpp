@@ -58,5 +58,5 @@ private:
 
 	// Used to carry importance and probably 
 	// later radiance for photon mapping (i think)
-	Color _rayColor;
+	Radiance _rayColor;
 };

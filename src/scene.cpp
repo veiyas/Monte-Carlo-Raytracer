@@ -401,7 +401,7 @@ Color RayTree::traverseRayTree(Ray* input) const
 					computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 5.0f, 1.0f)), //TODO This is not quite correct (but close)
 					intersectData._normal);
 				roughness = glm::clamp(roughness, 0.0, 1.0);
-				double photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
+				Radiance photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
 				localLightContribution = intersectObject->getColor() * photonContrib * roughness;
 			}
 			else // TODO There is huge mismatch in magnitude

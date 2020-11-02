@@ -6,6 +6,7 @@
 #include <chrono>
 #include <kdtree.hpp>
 #include <mutex>
+#include <variant>
 
 #include "ray.hpp"
 #include "brdf.hpp"
@@ -18,7 +19,7 @@ struct PhotonNode
 {
 	typedef float value_type;
 	Vertex _pos;
-	float flux;
+	Radiance flux;
 	Direction _photonDir;
 
 	value_type operator[](size_t n) const { return _pos[n]; }
@@ -32,12 +33,12 @@ public:
 	//Checks if shadow photons are present in range around searchPoint
 	bool areShadowPhotonsPresent(const Vertex& intersectionPoint);
 	//Calculates flux at intersectionPoint using all photins within range
-	double getPhotonFlux(const Vertex& intersectionPoint);
+	Radiance getPhotonFlux(const Vertex& intersectionPoint);
 private:
 	KDTree::KDTree<3, PhotonNode> _photonMap;
 	KDTree::KDTree<3, PhotonNode> _shadowPhotonMap;
 	std::mutex _mutex;
-	float _deltaFlux;
+	double _deltaFlux;
 
 	std::mt19937 _gen;
 	std::uniform_real_distribution<float> _rng;
