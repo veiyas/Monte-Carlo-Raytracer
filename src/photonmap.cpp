@@ -1,4 +1,7 @@
 #include "photonmap.hpp"
+#include "util.hpp"
+
+#include <glm/gtx/io.hpp >
 
 PhotonMap::PhotonMap(const SceneGeometry& geometry)
 	: _photonMap{}, _gen{ std::random_device{}() }, _rng{ 0.f, 1.f }, _deltaFlux{ calculateDeltaFlux() }
@@ -66,18 +69,23 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 					else if (pIntersects[0].second == BRDF::TRANSPARENT)
 					{
 						const IntersectionData tempInter = pIntersects[0].first;
-						float incAngle = glm::angle(-currentP.getNormalizedDirection(), pIntersects[0].first._normal);
+						float incAngle = glm::angle(currentP.getNormalizedDirection(), pIntersects[0].first._normal);
 						double reflectionCoeff, n1, n2;
 						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
 
-						//std::cout << "refraction, i = " << i << ' ' << &currentP.getIntersectedObject() << ' '
-						//	<< tempInter._t << glm::to_string(pIntersects[0].first._intersectPoint) << currentP.isInsideObject() << '\n';
+						//std::cout << "refraction, i = " << i << ' ' //<< &currentP.getIntersectedObject() << ' '
+						//	<< tempInter._t << pIntersects[0].first._intersectPoint << ' ' 
+						//	<< currentP.isInsideObject() << ' ' << rayIsTransmitted << ' '
+						//	<< currentP.getNormalizedDirection() << ' '
+						//	<< '\n';
 
 						if (rayIsTransmitted)
 						{
 							Photon refractedPhoton = computeRefractedRay(
 								tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
 							refractedPhoton.setColor(refractedPhoton.getColor() * (1.f - reflectionCoeff));
+
+							//std::cout << currentP.getNormalizedDirection() << ' ' << refractedPhoton.getNormalizedDirection() << '\n';
 
 							photonQueue.push(std::move(refractedPhoton));
 						}
@@ -172,7 +180,7 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData&
 	float rand1 = _rng(_gen);
 	float rand2 = _rng(_gen);
 
-	if (rand1 + Config::monteCarloTerminationProbability() > 1.f)
+	if (rand1 + Config::monteCarloTerminationProbability() < 1.f)
 	{
 		Photon generatedPhoton = generateRandomReflectedRay(
 			currentPhoton.getNormalizedDirection(),

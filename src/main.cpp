@@ -13,16 +13,18 @@ int main()
 {
 	auto& config = Config::instance();
 	config.setResolution(200);
-	config.setSamplesPerPixel(100);
+	config.setSamplesPerPixel(10);
 	config.setMonteCarloTerminationProbability(0.2f);
 	config.setNumShadowRaysPerIntersection(1);
-	config.setUsePhotonMapping(true);
+	config.setUsePhotonMapping(false);
 
 	Scene scene;
 
 	Camera testCamera;
-	testCamera.render(scene);
+	auto duration = testCamera.render(scene);
 
+	testCamera.limitRange(0.01);
+	testCamera.normalize();
 	testCamera.sqrtAllPixels();
 
 	// Save over old file to ease debugging
@@ -30,7 +32,8 @@ int main()
 
 	// Save under unique name as well, to document progress
 	std::string filename = "Renders/MC_" + friendlyTimeStamp() + "_" +
-		std::to_string(Config::samplesPerPixel()) + "spp" + ".png";
+		std::to_string(Config::samplesPerPixel()) + "spp_" +
+		friendlyDurationFormat(duration) + ".png";
 	testCamera.createPNG(filename);
 
 	return 0;

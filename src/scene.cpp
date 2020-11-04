@@ -85,7 +85,7 @@ RayTree::RayTree(Ray& initialRay, Scene* scene)
 void RayTree::raytracePixel()
 {
 	constructRayTree();
-	_finalColor = traverseRayTree(_head.get());
+	_finalColor = traverseRayTree(_head.get(), false);
 }
 
 //// TODO Replace with raycastingfunctions
@@ -162,7 +162,7 @@ void RayTree::constructRayTree()
 		const auto& currentSurfaceType = currentIntersectObject->getBRDF().getSurfaceType();
 
 		if (currentSurfaceType == BRDF::LIGHT) // Terminate on light
-			;
+			; // The importance should *not* be set to white here
 		else if (currentSurfaceType == BRDF::REFLECTOR)
 		{
 			// All importance is reflected
@@ -333,7 +333,7 @@ void RayTree::constructRayTree()
 
 // THIS IS COMPLETELY RECURSIVE FOR NOW; i cant be bothered to figure out any other 
 // way atm
-Color RayTree::traverseRayTree(Ray* input) const
+Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 {
 	Ray* currentRay = input;
 
@@ -351,6 +351,7 @@ Color RayTree::traverseRayTree(Ray* input) const
 	//auto surfaceType = currentRay->getIntersectedObject().value()->getBRDF();
 	auto& intersectData = currentRay->getIntersectionData().value();
 	auto& intersectObject = currentRay->getIntersectedObject().value();
+	auto surfaceType = intersectObject->getBRDF().getSurfaceType();
 
 	Color localLightContribution = Color{ 0 };
 
@@ -388,7 +389,7 @@ Color RayTree::traverseRayTree(Ray* input) const
 
 
 
-	if (intersectObject->getBRDF().getSurfaceType() != BRDF::TRANSPARENT)
+	if (surfaceType != BRDF::TRANSPARENT)
 	{
 		if (Config::usePhotonMapping())
 		{
@@ -429,25 +430,28 @@ Color RayTree::traverseRayTree(Ray* input) const
 
 	if (left == nullptr && right == nullptr)
 	{
-		//if (intersectObject->getBRDF().getSurfaceType() == BRDF::LIGHT)
-		//	return intersectObject->getColor() / 1.0; // TODO Dividing here is probably cheating an not right at all
-		//else
+		if (surfaceType == BRDF::LIGHT && !hasBeenDiffuselyReflected)
+			return intersectObject->getColor();
+		else
 			return localLightContribution;
 	}
 	else if (left && right == nullptr)
 	{
+		if (surfaceType == BRDF::DIFFUSE)
+			hasBeenDiffuselyReflected = true;
+
 		return safeDivide(left->getColor(), currentRay->getColor()) *
-			traverseRayTree(left) + localLightContribution;
+			traverseRayTree(left, hasBeenDiffuselyReflected) + localLightContribution;
 	}
 	else if (left == nullptr && right)
 	{
 		return safeDivide(right->getColor(), currentRay->getColor()) *
-			traverseRayTree(right) + localLightContribution;
+			traverseRayTree(right, hasBeenDiffuselyReflected) + localLightContribution;
 	}
-	else if (left && right)
+	else if (left && right) // Only happens for transparent objects
 	{
-		Color leftSubContrib = traverseRayTree(currentRay->getLeft()) * left->getColor();
-		Color rightSubContrib = traverseRayTree(currentRay->getRight()) * right->getColor();
+		Color leftSubContrib = traverseRayTree(currentRay->getLeft(), hasBeenDiffuselyReflected) * left->getColor();
+		Color rightSubContrib = traverseRayTree(currentRay->getRight(), hasBeenDiffuselyReflected) * right->getColor();
 
 		return safeDivide((leftSubContrib + rightSubContrib), currentRay->getColor()) + localLightContribution;
 	}

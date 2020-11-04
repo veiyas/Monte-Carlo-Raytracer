@@ -39,3 +39,15 @@ std::string durationFormat(std::chrono::duration<double> duration)
 	     + std::to_string(minutesElapsed) + "m:"
 	     + std::to_string(secondsElapsed) + "s";
 }
+
+std::string friendlyDurationFormat(std::chrono::duration<double> duration)
+{
+	double elapsedTime = duration.count();
+	int hoursElapsed = elapsedTime / (60 * 60);
+	int minutesElapsed = (int(elapsedTime) % (60 * 60)) / 60;
+	int secondsElapsed = int(elapsedTime) % 60;
+
+	return std::to_string(hoursElapsed) + "h-"
+		+ std::to_string(minutesElapsed) + "m-"
+		+ std::to_string(secondsElapsed) + "s";
+}

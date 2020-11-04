@@ -17,8 +17,10 @@ Camera::Camera()
 {
 }
 
-void Camera::render(Scene& scene)
+std::chrono::duration<double> Camera::render(Scene& scene)
 {
+	static int feedbackCheckpointMod = (Config::samplesPerPixel() > 20) ? Config::samplesPerPixel() / 20 : 5;
+
 	std::cout << "Start rendering...\n";
 	auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -28,37 +30,60 @@ void Camera::render(Scene& scene)
 
 	std::cout << "Available threads: " << numCores << "\n";
 
-	for (int row = 0; row < HEIGHT; row += numCores)
+	for (int i = 0; i < Config::samplesPerPixel(); i++)
 	{
-		std::vector<std::thread> threads;
 		
-		for (size_t i = 0; (i < numCores) && (row + i < HEIGHT); i++)
+		// Give some indication of progress in a not so elegant way
+		if (i % feedbackCheckpointMod == 0 && i != 0)
 		{
-			threads.push_back(std::thread(&Camera::renderThreadFunction, this, row + i, std::ref(scene)));
+			double percentDone = (100.0 * i) / Config::samplesPerPixel();
+			double factorDone = percentDone / 100.0;
+			auto elapsed = std::chrono::high_resolution_clock::now() - startTime;
+			auto estimatedRemaining = (elapsed / factorDone) * (1 - factorDone);
+			std::cout << std::setw(2) << percentDone << "%\tEstimated remaining: "
+				<< durationFormat(estimatedRemaining) << "\n";
 		}
+
+		for (int row = 0; row < HEIGHT; row += numCores)
+		{
+
+			std::vector<std::thread> threads;
 		
-		for (auto& thread : threads)
-		{
-			thread.join();
+			for (size_t i = 0; (i < numCores) && (row + i < HEIGHT); i++)
+			{
+				threads.push_back(std::thread(&Camera::renderThreadFunction, this, row + i, std::ref(scene)));
+			}
+		
+			for (auto& thread : threads)
+			{
+				thread.join();
+			}
 		}
+
 	}
+
+	for (size_t row = 0; row < HEIGHT; ++row)
+		for (size_t col = 0; col < WIDTH; ++col)
+			_pixels[row][col]._color /= Config::samplesPerPixel();
 
 	auto endTime = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> duration = endTime - startTime;
-	std::cout << "\nRendering finished, " << scene.getNCalculations() <<
+	std::string finsihedText =
+		" ______ _       _     _              _ _ \n"
+		"|  ____(_)     (_)   | |            | | |\n"
+		"| |__   _ _ __  _ ___| |__   ___  __| | |\n"
+		"|  __| | | '_ \\| / __| '_ \\ / _ \\/ _` | |\n"
+		"| |    | | | | | \\__ \\ | | |  __/ (_| |_|\n"
+		"|_|    |_|_| |_|_|___/_| |_|\\___|\\__,_(_)\n";
+	std::cout << finsihedText << scene.getNCalculations() <<
 		" calculations completed in " << durationFormat(duration) << "\n\n";
+	return duration;
 }
 
 void Camera::renderThreadFunction(int row, Scene& scene)
 {
-	// Give some indication of progress in a not so elegant way
-	if (row % 50 == 0)
-		std::cout << std::setw(2) << (100 * row) / WIDTH << "%\n";
-
 	for (int col = 0; col < WIDTH; ++col)
 	{
-		for (int i = 0; i < Config::samplesPerPixel(); i++)
-		{
 			float yOffset = _rng(_gen);
 			float zOffset = _rng(_gen);
 
@@ -86,8 +111,6 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 			//	std::cout << glm::to_string(contrib) << " whattt\n";
 			//}
 
-		}
-		_pixels[row][col]._color /= Config::samplesPerPixel();
 	}
 }
 
@@ -101,11 +124,46 @@ void Camera::sqrtAllPixels()
 			if (someComponent(color, isnan<double>) ||
 				someComponent(color, isinf<double>) ||
 				someComponent(color, [](double val) { return val < 0; }))
+			{
 				std::cout << "Problem pixel detected, value: " << glm::to_string(color) << "\n";
+				//_pixels[row][col]._color = Color{ 1,0,0 };
+			}
 
+			//_pixels[row][col]._color = glm::clamp(glm::sqrt(glm::max(_pixels[row][col]._color, 0.0)), 0.0, 0.1);
 			_pixels[row][col]._color = glm::sqrt(glm::max(_pixels[row][col]._color, 0.0));
 		}
 	}
+}
+
+void Camera::limitRange(double upperBound)
+{
+	for (size_t row = 0; row < HEIGHT; ++row)
+		for (size_t col = 0; col < WIDTH; ++col)
+		{
+			_pixels[row][col]._color = glm::clamp(_pixels[row][col]._color, 0.0, upperBound);
+		}
+}
+
+void Camera::normalize()
+{
+	double maxIntensity = 0.0f;
+	for (size_t row = 0; row < HEIGHT; ++row)
+		for (size_t col = 0; col < WIDTH; ++col)
+		{
+			const Color& color = _pixels[row][col]._color;
+			double maxOfPixel = glm::max(glm::max(color.r, color.g), color.b);
+			if (maxOfPixel > maxIntensity)
+				maxIntensity = maxOfPixel;
+
+			if (someComponent(color, isnan<double>))
+				std::cout << "Pixel with NaN detected, value: " << glm::to_string(color) << "\n";
+		}
+
+	for (size_t row = 0; row < HEIGHT; ++row)
+		for (size_t col = 0; col < WIDTH; ++col)
+		{
+			_pixels[row][col]._color = _pixels[row][col]._color / maxIntensity;
+		}
 }
 
 void Camera::createPNG(const std::string& file)
@@ -138,7 +196,7 @@ void Camera::createPNG(const std::string& file)
 		{
 			unsigned char r = static_cast<unsigned char>(_pixels[row][col]._color.r * 255.99f / maxIntensity);
 			unsigned char g = static_cast<unsigned char>(_pixels[row][col]._color.g * 255.99f / maxIntensity);
-			unsigned char b = static_cast<unsigned char>(_pixels[row][col]._color.b * 255.99f / maxIntensity);			
+			unsigned char b = static_cast<unsigned char>(_pixels[row][col]._color.b * 255.99f / maxIntensity);
 
 			image[(HEIGHT - 1 - row) * 4 * WIDTH + (WIDTH - 1 - col) * 4 + 0] = r;
 			image[(HEIGHT - 1 - row) * 4 * WIDTH + (WIDTH - 1 - col) * 4 + 1] = g;

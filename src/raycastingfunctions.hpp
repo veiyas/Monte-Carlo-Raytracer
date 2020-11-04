@@ -152,9 +152,10 @@ inline bool shouldRayTransmit(double& n1, double& n2, double& reflectionCoeff, f
 	else
 		n1 = _airIndex, n2 = _glassIndex;
 
-	float brewsterAngle = asin(_airIndex / _glassIndex); // In radians
+	float brewsterAngle = asin(n2 / n1); // In radians
 	if (currentRay.isInsideObject() && incAngle > brewsterAngle) // Total internal reflection
 	{
+		//std::cout << incAngle << '\n';
 		reflectionCoeff = 1.f;
 		return false;
 	}
@@ -319,8 +320,9 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 			if (lightDistance == 0)
 				std::cout << "panikorkester\n";
 
-			brdf = 1;
+			//brdf = 1;
 			acc += brdf * glm::clamp(cosAlpha * cosBeta, 0.0, 1.0) / (lightDistance * lightDistance);
+			//acc += brdf * cosAlpha * cosBeta / (lightDistance * lightDistance);
 		}
 	}
 

@@ -54,11 +54,6 @@ public:
 	void raytracePixel();
 	Color getPixelColor() const { return _finalColor; }
 
-
-	//// TODO MOVE
-	//Ray generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal,
-	//	const Vertex& intersectPoint, float rand1, float rand2);
-
 private:
 	std::unique_ptr<Ray> _head;
 	Color _finalColor;
@@ -70,13 +65,9 @@ private:
 	//Random generator stuff for monte carlo
 	std::mt19937 _gen;
 	std::uniform_real_distribution<float> _rng;
-	//void monteCarloDiffuseContribution(
-	//	Ray* initialRay,
-	//	const IntersectionData& initialIntersection,
-	//	const SceneObject* intersectObj);
 
 	void constructRayTree();
-	Color traverseRayTree(Ray* input) const;
+	Color traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const;
 
 	void attachReflected(const IntersectionData& intData, Ray* currentRay) const;
 	void attachReflectedMonteCarlo(const IntersectionData& intData, Ray* currentRay, float rand1, float rand2);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <glm/gtx/string_cast.hpp>
 
 #include "basic_types.hpp"
 
@@ -13,3 +14,4 @@ bool someComponent(Color col, std::function<bool(double)> func);
 std::string friendlyTimeStamp();
 
 std::string durationFormat(std::chrono::duration<double> duration);
+std::string friendlyDurationFormat(std::chrono::duration<double> duration);

@@ -12,7 +12,9 @@ class Camera
 public:
 	Camera();
 
-	void render(Scene& scene);
+	std::chrono::duration<double> render(Scene& scene);
+	void limitRange(double upperBound);
+	void normalize();
 	void sqrtAllPixels();
 	void createPNG(const std::string& file);
 
