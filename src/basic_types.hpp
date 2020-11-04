@@ -12,6 +12,7 @@
 typedef glm::vec4 Vertex;
 typedef glm::vec3 Direction;
 typedef glm::vec<3, double> Color;
+using Radiance = Color; //For clarity
 
 class Ray;
 

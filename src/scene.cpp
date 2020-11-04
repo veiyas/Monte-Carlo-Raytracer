@@ -173,15 +173,15 @@ void RayTree::constructRayTree()
 		}
 		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
-			//bool shadowPhotonsPresent = _scene->_photonMap.areShadowPhotonsPresent(currentIntersection._intersectPoint);
+			//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint);
 			//if (!shadowPhotonsPresent)
 			//{
 			//	double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
 			//		currentRay->getNormalizedDirection(),
 			//		computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
 			//		currentIntersection._normal);
-			//	double photonContrib = _scene->_photonMap.getPhotonFlux(currentIntersection._intersectPoint);
-			//	currentRay->setColor(currentIntersectObject->getColor() * photonContrib * roughness);
+			//	double photonContrib = _scene->_photonMap->getPhotonFlux(currentIntersection._intersectPoint);
+			//	currentRay->setColor(currentIntersectObject->getColor() * photonContrib);
 			//}
 			//else
 			{
@@ -338,7 +338,7 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 	Ray* currentRay = input;
 
 	// DEBUG
-	if (someComponent(currentRay->getColor(), isnan<double>))
+	if (someComponent(currentRay->getColor(), static_cast<bool(*)(double)>(std::isnan)))
 		std::cout << "isnan\n";
 
 	Ray* left = currentRay->getLeft();
@@ -402,7 +402,7 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 					computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 5.0f, 1.0f)), //TODO This is not quite correct (but close)
 					intersectData._normal);
 				roughness = glm::clamp(roughness, 0.0, 1.0);
-				double photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
+				Radiance photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
 				localLightContribution = intersectObject->getColor() * photonContrib * roughness;
 			}
 			else // TODO There is huge mismatch in magnitude

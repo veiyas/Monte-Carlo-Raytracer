@@ -18,8 +18,7 @@ int main()
 	config.setNumShadowRaysPerIntersection(1);
 	config.setUsePhotonMapping(false);
 
-	Scene scene;
-
+	Scene scene{};
 	Camera testCamera;
 	auto duration = testCamera.render(scene);
 
