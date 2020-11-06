@@ -18,7 +18,6 @@ Tetrahedron::Tetrahedron(BRDF brdf, float radius, Color color, Vertex position)
 		radius * glm::rotateX(glm::rotateZ(Vertex{  1.0f, -1.0f, -1.0f, 0.0f }, 1.0f), 1.0f) + position
 	};
 
-
 	_triangles.emplace_back(v[2], v[1], v[0], color);
 	_triangles.emplace_back(v[0], v[3], v[2], color);
 	_triangles.emplace_back(v[1], v[3], v[0], color);
@@ -68,7 +67,7 @@ void Tetrahedron::rayIntersections(Ray& ray, std::vector<IntersectionSurface>& t
 				ray.getStart() + Vertex{ ray.getNormalizedDirection() * t, 0.0f },
 				triangle.getNormal(),
 				t };
-			toBeFilled.push_back(std::make_pair(temp, getBRDF().getSurfaceType()));
+			toBeFilled.push_back(std::make_tuple(temp, getBRDF().getSurfaceType(), triangle.getColor()));
 		}
 	}
 }
@@ -166,7 +165,7 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 			d
 		};
 		if (d > 0)
-			toBeFilled.push_back(std::make_pair(temp, getBRDF().getSurfaceType()));
+			toBeFilled.push_back(std::make_tuple(temp, getBRDF().getSurfaceType(), getColor()));
 	}
 	else // Two intersections
 	{
@@ -200,9 +199,9 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 		}
 
 		if (d > 0)
-			toBeFilled.push_back(std::make_pair(temp1, getBRDF().getSurfaceType()));
+			toBeFilled.push_back(std::make_tuple(temp1, getBRDF().getSurfaceType(), getColor()));
 		if (d2 > 0)
-			toBeFilled.push_back(std::make_pair(temp2, getBRDF().getSurfaceType()));
+			toBeFilled.push_back(std::make_tuple(temp2, getBRDF().getSurfaceType(), getColor()));
 	}
 
 	//glm::vec3 intersection = rayStart + rayDirectionNormalized.operator*=(d);

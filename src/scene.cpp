@@ -424,7 +424,6 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 				intersectData._normal,
 				intersectObject,
 				_scene->_sceneGeometry);
-
 		}
 	}
 

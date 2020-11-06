@@ -90,9 +90,10 @@ inline void calcIntersection<TriangleObj>(
 		//Did intersection occur?
 		if (tempIntersection.has_value())
 		{
-			intersections.push_back(std::make_pair(
+			intersections.push_back(std::make_tuple(
 				tempIntersection.value(),
-				objects[i].accessBRDF().getSurfaceType()));
+				objects[i].accessBRDF().getSurfaceType(),
+				objects[i].getColor()));
 		}
 	}
 }
@@ -106,7 +107,7 @@ inline void photonIntersection(Ray& ray, const SceneGeometry& geometry, std::vec
 
 	std::sort(intersections.begin(), intersections.end(), [](IntersectionSurface& a, IntersectionSurface& b)
 		{
-			return a.first._t < b.first._t;
+			return std::get<0>(a)._t < std::get<0>(b)._t;
 		});
 }
 

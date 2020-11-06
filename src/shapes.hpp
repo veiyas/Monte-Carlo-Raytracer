@@ -11,7 +11,7 @@
 #include "brdf.hpp"
 #include "triangle.hpp"
 
-using IntersectionSurface = std::pair<IntersectionData, unsigned>;
+using IntersectionSurface = std::tuple<IntersectionData, unsigned, Color>;
 class SceneObject
 {
 public:

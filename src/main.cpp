@@ -16,7 +16,7 @@ int main()
 	config.setSamplesPerPixel(10);
 	config.setMonteCarloTerminationProbability(0.2f);
 	config.setNumShadowRaysPerIntersection(1);
-	config.setUsePhotonMapping(false);
+	config.setUsePhotonMapping(true);
 
 	Scene scene{};
 	Camera testCamera;

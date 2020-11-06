@@ -48,8 +48,8 @@ private:
 	void getPhotons(std::vector<PhotonNode>& foundPhotons, const PhotonNode& searchPoint);
 	Ray generateRandomPhotonFromLight(const float x, const float y);
 	float calculateDeltaFlux() const;
-	void handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Photon& currentPhoton);
+	void handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Color& surfColor, Photon& currentPhoton);
 
 	static constexpr float SEARCH_RANGE = 0.01f;
-	static constexpr size_t N_PHOTONS_TO_CAST = 10'000'000;
+	static constexpr size_t N_PHOTONS_TO_CAST = 1'000'000;
 };

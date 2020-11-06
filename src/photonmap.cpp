@@ -35,29 +35,28 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 				photonIntersection(currentP, geometry, pIntersects);
 
 				//One intersection, should only happen with diffuse surfaces
-				if (pIntersects.size() == 1 && pIntersects[0].second == BRDF::DIFFUSE)
+				if (pIntersects.size() == 1 && std::get<1>(pIntersects[0]) == BRDF::DIFFUSE)
 				{					
 					Radiance pFlux = _deltaFlux * currentP.getColor();
-					addPhoton(PhotonNode{pIntersects[0].first._intersectPoint, pFlux, currentP.getNormalizedDirection() },
+					addPhoton(PhotonNode{ std::get<0>(pIntersects[0])._intersectPoint, pFlux, currentP.getNormalizedDirection() },
 						photonData);
-					handleMonteCarloPhoton(photonQueue, pIntersects[0].first, currentP);
+					handleMonteCarloPhoton(photonQueue, std::get<0>(pIntersects[0]), std::get<2>(pIntersects[0]), currentP);
 				}
 				else if (pIntersects.size() > 1) //Multiple intersections
 				{					
-					if (pIntersects[0].second == BRDF::DIFFUSE)
+					if (std::get<1>(pIntersects[0]) == BRDF::DIFFUSE)
 					{
 						Radiance pFlux = _deltaFlux * currentP.getColor();
-						addPhoton(PhotonNode{ pIntersects[0].first._intersectPoint, pFlux, currentP.getNormalizedDirection() },
+						addPhoton(PhotonNode{ std::get<0>(pIntersects[0])._intersectPoint, pFlux, currentP.getNormalizedDirection() },
 							photonData);
-						handleMonteCarloPhoton(photonQueue, pIntersects[0].first, currentP);
-						
+						handleMonteCarloPhoton(photonQueue, std::get<0>(pIntersects[0]), std::get<2>(pIntersects[0]), currentP);
 
 						if (isEmittedByLight)
 							addShadowPhotons(pIntersects);
 					}
-					else if (pIntersects[0].second == BRDF::REFLECTOR)
+					else if (std::get<1>(pIntersects[0]) == BRDF::REFLECTOR)
 					{
-						const IntersectionData tempInter = pIntersects[0].first;
+						const IntersectionData tempInter = std::get<0>(pIntersects[0]);
 						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
 						reflectedPhoton.setColor(currentP.getColor()); //Radiance carries over
 						photonQueue.push(std::move(reflectedPhoton));
@@ -67,10 +66,10 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 						if (isEmittedByLight)
 							addShadowPhotons(pIntersects);
 					}
-					else if (pIntersects[0].second == BRDF::TRANSPARENT)
+					else if (std::get<1>(pIntersects[0]) == BRDF::TRANSPARENT)
 					{
-						const IntersectionData tempInter = pIntersects[0].first;
-						float incAngle = glm::angle(currentP.getNormalizedDirection(), pIntersects[0].first._normal);
+						const IntersectionData tempInter = std::get<0>(pIntersects[0]);
+						float incAngle = glm::angle(currentP.getNormalizedDirection(), std::get<0>(pIntersects[0])._normal);
 						double reflectionCoeff, n1, n2;
 						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
 
@@ -143,7 +142,7 @@ void PhotonMap::addShadowPhotons(std::vector<IntersectionSurface>& inputData)
 	std::lock_guard<std::mutex> tempLock{ this->_mutex };
 	for (size_t i = 1; i < inputData.size(); i++)
 	{
-		auto tempInter = inputData[i].first;
+		auto tempInter = std::get<0>(inputData[i]);
 		_shadowPhotonMap.insert((PhotonNode{tempInter._intersectPoint}));
 	}
 }
@@ -176,7 +175,7 @@ float PhotonMap::calculateDeltaFlux() const
 	return 500.f / static_cast<float>(N_PHOTONS_TO_CAST);
 }
 
-void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Photon& currentPhoton)
+void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Color& surfColor, Photon& currentPhoton)
 {
 	float rand1 = _rng(_gen);
 	float rand2 = _rng(_gen);
@@ -193,6 +192,7 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData&
 		//Radiance is spread over a hemisphere, normalizing nominator is up for debate
 		generatedPhoton.setColor(
 			currentPhoton.getColor() *
+			surfColor *
 			(glm::pi<double>() / (Config::monteCarloTerminationProbability() * Config::samplesPerPixel())));
 		queue.push(std::move(generatedPhoton));
 	}
