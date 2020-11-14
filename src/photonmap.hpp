@@ -33,7 +33,8 @@ public:
 	//Checks if shadow photons are present in range around searchPoint
 	bool areShadowPhotonsPresent(const Vertex& intersectionPoint);
 	//Calculates flux at intersectionPoint using all photins within range
-	Radiance getPhotonFlux(const Vertex& intersectionPoint);
+	Radiance getPhotonRadianceContrib(const Direction& incomingDir,
+		const SceneObject* const intersectObject, const IntersectionData& intersectionData);
 private:
 	KDTree::KDTree<3, PhotonNode> _photonMap;
 	KDTree::KDTree<3, PhotonNode> _shadowPhotonMap;
@@ -50,6 +51,6 @@ private:
 	float calculateDeltaFlux() const;
 	void handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Color& surfColor, Photon& currentPhoton);
 
-	static constexpr float SEARCH_RANGE = 0.01f;
+	static constexpr float SEARCH_RANGE = 0.05f;
 	static constexpr size_t N_PHOTONS_TO_CAST = 1'000'000;
 };

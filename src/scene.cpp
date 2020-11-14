@@ -268,7 +268,6 @@ void RayTree::constructRayTree()
 	}
 }
 
-//<<<<<<< HEAD
 // I leave this here for now -- the plan is to rewrite the new version to be iterative,
 // and this will be a useful reference
 //Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
@@ -362,25 +361,17 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 
 
 
-	//// TESTING: Visualizing photon map, dont remove plz ==============================
-	//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
-	//if (!shadowPhotonsPresent)
-	//{
-	//	auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
-	//	double roughness = intersectObject->accessBRDF().computeOrenNayar(
-	//		-currentRay->getNormalizedDirection(),
-	//		computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 5.0f, 1.0f)),
-	//		glm::normalize(intersectData._normal));
-	//	double photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
-	//	if (/*photonContrib < 0 || */roughness < 0)
-	//	{
-	//		//std::cout << "oh no\n";
-	//		return Color{ 0,0,1 };
-	//	}
-	//	return intersectObject->getColor() * photonContrib * roughness;
-	//}
-	//else return Color{ 1,0,1 };
-	//// ================================================================================
+	// TESTING: Visualizing photon map, dont remove plz ==============================
+	bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
+	if (!shadowPhotonsPresent)
+	{
+		Color photonContrib = _scene->_photonMap->getPhotonRadianceContrib(
+			-currentRay->getNormalizedDirection(), intersectObject, intersectData);
+
+		return photonContrib;
+	}
+	else return 1.0 * Color{ 1,0,1 };
+	// ================================================================================
 
 
 
@@ -393,17 +384,11 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 	{
 		if (Config::usePhotonMapping())
 		{
-			auto [x, y] = _scene->_sceneGeometry._ceilingLights[0].getCenterPoints();
 			bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
 			if (!shadowPhotonsPresent)
 			{
-				double roughness = intersectObject->accessBRDF().computeOrenNayar(
-					-currentRay->getNormalizedDirection(),
-					computeShadowRayDirection(intersectData._intersectPoint, Vertex(x, y, 5.0f, 1.0f)), //TODO This is not quite correct (but close)
-					intersectData._normal);
-				roughness = glm::clamp(roughness, 0.0, 1.0);
-				Radiance photonContrib = _scene->_photonMap->getPhotonFlux(intersectData._intersectPoint);
-				localLightContribution = intersectObject->getColor() * photonContrib * roughness;
+				localLightContribution = _scene->_photonMap->getPhotonRadianceContrib(
+					-currentRay->getNormalizedDirection(), intersectObject, intersectData);
 			}
 			else // TODO There is huge mismatch in magnitude
 			{
@@ -413,7 +398,6 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 					intersectData._normal,
 					intersectObject,
 					_scene->_sceneGeometry);
-
 			}
 		}
 		else

@@ -22,8 +22,8 @@ int main()
 	Camera testCamera;
 	auto duration = testCamera.render(scene);
 
-	testCamera.limitRange(0.01);
-	testCamera.normalize();
+	//testCamera.limitRange(0.01);
+	//testCamera.normalize();
 	testCamera.sqrtAllPixels();
 
 	// Save over old file to ease debugging

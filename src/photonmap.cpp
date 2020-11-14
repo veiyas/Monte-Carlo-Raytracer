@@ -122,16 +122,24 @@ bool PhotonMap::areShadowPhotonsPresent(const Vertex& intersectionPoint)
 	return _shadowPhotonMap.count_within_range(p, SEARCH_RANGE) > 0 ? true : false;
 }
 
-Radiance PhotonMap::getPhotonFlux(const Vertex& intersectionPoint)
+Radiance PhotonMap::getPhotonRadianceContrib(const Direction& incomingDir,
+	const SceneObject* const intersectObject, const IntersectionData& intersectionData)
 {
-	PhotonNode searchPosition{ intersectionPoint };
+	PhotonNode searchPosition{ intersectionData._intersectPoint };
 	std::vector<PhotonNode> photons;
 	photons.reserve(5u * N_PHOTONS_TO_CAST / 1000u);
 	getPhotons(photons, searchPosition);
 
 	Radiance photonContrib{};
 	for (const auto& p : photons)
-		photonContrib += p.flux;
+	{
+		double roughness = intersectObject->accessBRDF().computeOrenNayar(
+			incomingDir,
+			p._photonDir,
+			glm::normalize(intersectionData._normal));
+
+		photonContrib += roughness * intersectObject->getColor() * p.flux;
+	}
 	photonContrib /= (PI * glm::pow(PhotonMap::SEARCH_RANGE, 2.0));
 
 	return photonContrib;
@@ -193,7 +201,8 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData&
 		generatedPhoton.setColor(
 			currentPhoton.getColor() *
 			surfColor *
-			(glm::pi<double>() / (Config::monteCarloTerminationProbability() * Config::samplesPerPixel())));
+			//(1.0));
+			(1.0 / (1 - Config::monteCarloTerminationProbability())));
 		queue.push(std::move(generatedPhoton));
 	}
 }
