@@ -60,7 +60,7 @@ SceneGeometry::SceneGeometry()
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 8.f, 0.f, -2.5f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, 0.f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.02, 0.02, 0.02 }, Vertex{ 9.f, 0.0f, -3.5f, 1.f });
-	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.5f, Color{ 0.1, 0.1, 0.1 }, Vertex{ 6.f, 3.5f, -3.f, 1.f });
+	_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.5f, Color{ 0.1, 0.1, 0.1 }, Vertex{ 6.f, 3.5f, -3.f, 1.f });
 	_spheres.emplace_back(BRDF{ BRDF::DIFFUSE }, 1.5f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 6.f, -3.5f, -3.f, 1.f });
 	std::cout << "done!\n";
 }

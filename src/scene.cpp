@@ -173,17 +173,9 @@ void RayTree::constructRayTree()
 		}
 		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
-			//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint);
-			//if (!shadowPhotonsPresent)
-			//{
-			//	double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
-			//		currentRay->getNormalizedDirection(),
-			//		computeShadowRayDirection(currentIntersection._intersectPoint, _scene->_pointLight),
-			//		currentIntersection._normal);
-			//	double photonContrib = _scene->_photonMap->getPhotonFlux(currentIntersection._intersectPoint);
-			//	currentRay->setColor(currentIntersectObject->getColor() * photonContrib);
-			//}
-			//else
+			// If photon mapping is used the reflection is handled by the photon map unless in shadow
+			if (!Config::usePhotonMapping() || (Config::usePhotonMapping() 
+			                                    && _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint)))
 			{
 				float rand1 = _rng(_gen);
 				float rand2 = _rng(_gen);
@@ -361,17 +353,17 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 
 
 
-	// TESTING: Visualizing photon map, dont remove plz ==============================
-	bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
-	if (!shadowPhotonsPresent)
-	{
-		Color photonContrib = _scene->_photonMap->getPhotonRadianceContrib(
-			-currentRay->getNormalizedDirection(), intersectObject, intersectData);
+	//// TESTING: Visualizing photon map, dont remove plz ==============================
+	//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
+	//if (!shadowPhotonsPresent)
+	//{
+	//	Color photonContrib = _scene->_photonMap->getPhotonRadianceContrib(
+	//		-currentRay->getNormalizedDirection(), intersectObject, intersectData);
 
-		return photonContrib;
-	}
-	else return 1.0 * Color{ 1,0,1 };
-	// ================================================================================
+	//	return photonContrib;
+	//}
+	//else return 1.0 * Color{ 1,0,1 };
+	//// ================================================================================
 
 
 
@@ -414,7 +406,7 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 	if (left == nullptr && right == nullptr)
 	{
 		if (surfaceType == BRDF::LIGHT && !hasBeenDiffuselyReflected)
-			return intersectObject->getColor();
+			return Color{ 1000.0 / glm::pi<double>() };
 		else
 			return localLightContribution;
 	}

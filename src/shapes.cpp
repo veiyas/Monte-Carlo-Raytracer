@@ -196,6 +196,7 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 		if (d < 0 && d2 > 0) // The intersecting ray is coming from inside the object
 		{
 			temp1._normal *= -1; // Flip normal
+			temp2._normal *= -1; // Flip normal
 		}
 
 		if (d > 0)

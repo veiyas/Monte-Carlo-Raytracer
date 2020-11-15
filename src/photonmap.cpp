@@ -35,6 +35,7 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 				photonIntersection(currentP, geometry, pIntersects);
 
 				//One intersection, should only happen with diffuse surfaces
+				//TODO This is not strictly true, could happen at edge of sphere
 				if (pIntersects.size() == 1 && std::get<1>(pIntersects[0]) == BRDF::DIFFUSE)
 				{					
 					Radiance pFlux = _deltaFlux * currentP.getColor();
@@ -69,7 +70,7 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 					else if (std::get<1>(pIntersects[0]) == BRDF::TRANSPARENT)
 					{
 						const IntersectionData tempInter = std::get<0>(pIntersects[0]);
-						float incAngle = glm::angle(currentP.getNormalizedDirection(), std::get<0>(pIntersects[0])._normal);
+						float incAngle = glm::angle(-currentP.getNormalizedDirection(), std::get<0>(pIntersects[0])._normal);
 						double reflectionCoeff, n1, n2;
 						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
 
@@ -79,25 +80,35 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 						//	<< currentP.getNormalizedDirection() << ' '
 						//	<< '\n';
 
+						//if (currentP.isInsideObject())
+						//{
+						//	std::cout << "hejkjl\n";
+						//}
+
+						//std::cout << reflectionCoeff << "hej\n";
+
+						///* DEBUG */ rayIsTransmitted = true;
 						if (rayIsTransmitted)
 						{
 							Photon refractedPhoton = computeRefractedRay(
 								tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
+							//refractedPhoton.setColor(Color(1000000));
 							refractedPhoton.setColor(currentP.getColor() * (1.f - reflectionCoeff));
+							/*refractedPhoton.setColor(100000.0 * Color(0,1,0));*/
 
 							//std::cout << currentP.getNormalizedDirection() << ' ' << refractedPhoton.getNormalizedDirection() << '\n';
 
 							photonQueue.push(std::move(refractedPhoton));
 						}
 						
-						//// TODO This cutoff is somewhat arbitrary, and slightly different from in the rendering step.
-						//// This is bcs the information needed for that is not available here. It might be a good idea to fix this
-						//if (currentP.isInsideObject())
-						//{
-						//	Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
-						//	reflectedPhoton.setColor(reflectedPhoton.getColor() * reflectionCoeff);
-						//	photonQueue.push(std::move(reflectedPhoton));
-						//}
+						// TODO This cutoff is somewhat arbitrary, and slightly different from in the rendering step.
+						// This is bcs the information needed for that is not available here. It might be a good idea to fix this
+						if (!currentP.isInsideObject())
+						{
+							Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
+							reflectedPhoton.setColor(reflectedPhoton.getColor() * reflectionCoeff);
+							photonQueue.push(std::move(reflectedPhoton));
+						}
 					}
 				}
 				isEmittedByLight = false; // Remaining photons are reflected/refracted
@@ -129,6 +140,7 @@ Radiance PhotonMap::getPhotonRadianceContrib(const Direction& incomingDir,
 	std::vector<PhotonNode> photons;
 	photons.reserve(5u * N_PHOTONS_TO_CAST / 1000u);
 	getPhotons(photons, searchPosition);
+	//std::cout << photons.size() << '.. \n';
 
 	Radiance photonContrib{};
 	for (const auto& p : photons)
@@ -137,10 +149,25 @@ Radiance PhotonMap::getPhotonRadianceContrib(const Direction& incomingDir,
 			incomingDir,
 			p._photonDir,
 			glm::normalize(intersectionData._normal));
+		roughness = glm::clamp(roughness, 0.0, 1.0);
 
 		photonContrib += roughness * intersectObject->getColor() * p.flux;
+		if (someComponent(photonContrib, static_cast<bool(*)(double)>(std::isnan)))
+		{
+			std::cout << roughness << ' ' << p.flux << ' ' << "hej\n";
+		}
+
+		//if (someComponent(p.flux, [](double d) { return d <= 0; }))
+		//{
+		//	std::cout << p.flux << ' ' << "sawdust\n";
+		//}
 	}
+	//if (someComponent(photonContrib, [](double d) { return d <= 0; }))
+	//{
+	//	std::cout << photonContrib << ' ' << "hej\n";
+	//}
 	photonContrib /= (PI * glm::pow(PhotonMap::SEARCH_RANGE, 2.0));
+
 
 	return photonContrib;
 }
@@ -158,6 +185,12 @@ void PhotonMap::addShadowPhotons(std::vector<IntersectionSurface>& inputData)
 void PhotonMap::addPhoton(PhotonNode&& currentPhoton, std::vector<PhotonNode>& photonData)
 {
 	std::lock_guard<std::mutex> tempLock{ this->_mutex };
+
+	//if (someComponent(currentPhoton.flux, [](double d) { return d <= 0; }))
+	//{
+	//	std::cout << "hjlkmm\n";
+	//}
+
 	photonData.push_back(std::move(currentPhoton));
 }
 
@@ -197,12 +230,12 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData&
 			rand1,
 			rand2);
 
+		//TODO BRDF should be used here
 		//Radiance is spread over a hemisphere, normalizing nominator is up for debate
 		generatedPhoton.setColor(
 			currentPhoton.getColor() *
 			surfColor *
-			//(1.0));
-			(1.0 / (1 - Config::monteCarloTerminationProbability())));
+			(1.0 / (1.0 - Config::monteCarloTerminationProbability())));
 		queue.push(std::move(generatedPhoton));
 	}
 }

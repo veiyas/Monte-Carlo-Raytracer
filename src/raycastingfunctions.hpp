@@ -328,9 +328,9 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 	}
 
 	// TODO Hard coding area is ofc terrible
-	double lightArea = 1;
+	constexpr double lightArea = 1;
 	// TODO Is it correct that L0 is the color of the light?
-	Color L0 = light.getColor();
+	constexpr double L0 = 1000.0 / (glm::pi<double>() * lightArea * lightArea);
 	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / Config::numShadowRaysPerIntersection()));
 
 	return returnValue;

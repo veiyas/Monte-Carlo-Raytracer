@@ -51,6 +51,6 @@ private:
 	float calculateDeltaFlux() const;
 	void handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionData& inter, Color& surfColor, Photon& currentPhoton);
 
-	static constexpr float SEARCH_RANGE = 0.05f;
+	static constexpr float SEARCH_RANGE = 0.07f;
 	static constexpr size_t N_PHOTONS_TO_CAST = 1'000'000;
 };
