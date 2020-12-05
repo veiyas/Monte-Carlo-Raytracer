@@ -12,7 +12,7 @@
 int main()
 {
 	auto& config = Config::instance();
-	config.setResolution(200);
+	config.setResolution(800);
 	config.setSamplesPerPixel(10);
 	config.setMonteCarloTerminationProbability(0.2f);
 	config.setNumShadowRaysPerIntersection(1);
@@ -22,7 +22,7 @@ int main()
 	Camera testCamera;
 	auto duration = testCamera.render(scene);
 
-	testCamera.limitRange(1.3);
+	testCamera.limitRange(1.4);
 	testCamera.normalize();
 	testCamera.sqrtAllPixels();
 

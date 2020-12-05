@@ -56,7 +56,7 @@ SceneGeometry::SceneGeometry()
 	_ceilingLights.emplace_back(BRDF{ BRDF::LIGHT }, 7.f, 0.f);
 
 	//// Algots scene
-	//_tetrahedrons.emplace_back(BRDF{ BRDF::REFLECTOR }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
+	//_tetrahedrons.emplace_back(BRDF{ BRDF::TRANSPARENT }, 0.8f, Color{ 1.0, 0.0, 0.0 }, Vertex{ 3.0f, 2.0f, -1.0f, 1.0f });
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.1, 0.1, 1.0 }, Vertex{ 8.f, 0.f, -2.5f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::TRANSPARENT }, 1.f, Color{ 1.0, 1.0, 1.0 }, Vertex{ 5.f, 0.f, 0.f, 1.f });
 	//_spheres.emplace_back(BRDF{ BRDF::REFLECTOR }, 1.5f, Color{ 0.02, 0.02, 0.02 }, Vertex{ 9.f, 0.0f, -3.5f, 1.f });

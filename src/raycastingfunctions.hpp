@@ -90,10 +90,9 @@ inline void calcIntersection<TriangleObj>(
 		//Did intersection occur?
 		if (tempIntersection.has_value())
 		{
-			intersections.push_back(std::make_tuple(
+			intersections.push_back(IntersectionSurface{
 				tempIntersection.value(),
-				objects[i].accessBRDF().getSurfaceType(),
-				objects[i].getColor()));
+				&objects[i]});
 		}
 	}
 }
@@ -107,7 +106,7 @@ inline void photonIntersection(Ray& ray, const SceneGeometry& geometry, std::vec
 
 	std::sort(intersections.begin(), intersections.end(), [](IntersectionSurface& a, IntersectionSurface& b)
 		{
-			return std::get<0>(a)._t < std::get<0>(b)._t;
+			return a.intersectionData._t < b.intersectionData._t;
 		});
 }
 
@@ -330,7 +329,7 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 	// TODO Hard coding area is ofc terrible
 	constexpr double lightArea = 1;
 	// TODO Is it correct that L0 is the color of the light?
-	constexpr double L0 = 1000.0 / (glm::pi<double>() * lightArea * lightArea);
+	constexpr double L0 = 1000.0 / (glm::pi<double>() * lightArea);
 	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / Config::numShadowRaysPerIntersection()));
 
 	return returnValue;

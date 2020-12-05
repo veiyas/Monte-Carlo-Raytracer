@@ -11,7 +11,7 @@
 #include "brdf.hpp"
 #include "triangle.hpp"
 
-using IntersectionSurface = std::tuple<IntersectionData, unsigned, Color>;
+
 class SceneObject
 {
 public:
@@ -25,6 +25,13 @@ public:
 private:
 	const BRDF _brdf;
 	Color _color;
+};
+
+//using IntersectionSurface = std::tuple<IntersectionData, unsigned, Color>;
+struct IntersectionSurface
+{
+	IntersectionData intersectionData;
+	const SceneObject* intersectionObject;
 };
 
 class Tetrahedron : public SceneObject

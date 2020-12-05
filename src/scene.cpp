@@ -173,9 +173,10 @@ void RayTree::constructRayTree()
 		}
 		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
-			// If photon mapping is used the reflection is handled by the photon map unless in shadow
-			if (!Config::usePhotonMapping() || (Config::usePhotonMapping() 
-			                                    && _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint)))
+			//// If photon mapping is used the reflection is handled by the photon map unless in shadow
+			//if (!Config::usePhotonMapping() || (Config::usePhotonMapping() 
+			//                                    && _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint)))
+			if (!Config::usePhotonMapping())
 			{
 				float rand1 = _rng(_gen);
 				float rand2 = _rng(_gen);
@@ -376,13 +377,15 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 	{
 		if (Config::usePhotonMapping())
 		{
-			bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
-			if (!shadowPhotonsPresent)
+			//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
+			//if (!shadowPhotonsPresent)
+			//{
+			if (!left)
 			{
 				localLightContribution = _scene->_photonMap->getPhotonRadianceContrib(
 					-currentRay->getNormalizedDirection(), intersectObject, intersectData);
 			}
-			else // TODO There is huge mismatch in magnitude
+			else
 			{
 				localLightContribution = localAreaLightContribution(
 					*currentRay,
