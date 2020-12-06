@@ -164,8 +164,9 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 			intersectionPointNormal,
 			d
 		};
-		if (d > 0)
-			toBeFilled.push_back(IntersectionSurface{ temp, this });
+		// probably shouldnt be handled like this, but im tired and it works hehe
+		//if (d > 0)
+		//	toBeFilled.push_back(IntersectionSurface{ temp, this });
 	}
 	else // Two intersections
 	{
