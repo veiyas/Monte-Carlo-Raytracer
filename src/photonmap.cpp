@@ -37,85 +37,71 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 				if (pIntersects.size() != 0)
 				{
 					const unsigned pFirstIntersectSurfaceType = pIntersects[0].intersectionObject->getBRDF().getSurfaceType();
-
-					//One intersection, should only happen with diffuse surfaces
-					//TODO This is not strictly true, could happen at edge of sphere
-					if (pIntersects.size() == 1 && pFirstIntersectSurfaceType == BRDF::DIFFUSE)
-					{					
+					if (pFirstIntersectSurfaceType == BRDF::DIFFUSE)
+					{
 						Radiance pFlux = _deltaFlux * currentP.getColor();
 						addPhoton(PhotonNode{ pIntersects[0].intersectionData._intersectPoint, pFlux, currentP.getNormalizedDirection() },
 							photonData);
 						handleMonteCarloPhoton(photonQueue, pIntersects[0], currentP);
+
+						if (isEmittedByLight)
+							addShadowPhotons(pIntersects);
 					}
-					else if (pIntersects.size() > 1) //Multiple intersections
-					{					
-						if (pFirstIntersectSurfaceType == BRDF::DIFFUSE)
-						{
-							Radiance pFlux = _deltaFlux * currentP.getColor();
-							addPhoton(PhotonNode{ pIntersects[0].intersectionData._intersectPoint, pFlux, currentP.getNormalizedDirection() },
-								photonData);
-							handleMonteCarloPhoton(photonQueue, pIntersects[0], currentP);
+					else if (pFirstIntersectSurfaceType == BRDF::REFLECTOR)
+					{
+						const IntersectionData tempInter = pIntersects[0].intersectionData;
+						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
+						reflectedPhoton.setColor(currentP.getColor()); //Radiance carries over
+						photonQueue.push(std::move(reflectedPhoton));
 
-							if (isEmittedByLight)
-								addShadowPhotons(pIntersects);
+						//std::cout << "reflection, i = " << i << ' ' << &currentP.getIntersectedObject()
+						//	<< tempInter._t << '\n';
+						if (isEmittedByLight)
+							addShadowPhotons(pIntersects);
+					}
+					else if (pFirstIntersectSurfaceType == BRDF::TRANSPARENT)
+					{
+						const IntersectionData tempInter = pIntersects[0].intersectionData;
+						float incAngle = glm::angle(-currentP.getNormalizedDirection(), pIntersects[0].intersectionData._normal);
+						double reflectionCoeff, n1, n2;
+						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
+
+						//std::cout << "refraction, i = " << i << ' ' //<< &currentP.getIntersectedObject() << ' '
+						//	<< tempInter._t << pIntersects[0].first._intersectPoint << ' ' 
+						//	<< currentP.isInsideObject() << ' ' << rayIsTransmitted << ' '
+						//	<< currentP.getNormalizedDirection() << ' '
+						//	<< '\n';
+
+						//if (currentP.isInsideObject())
+						//{
+						//	std::cout << "hejkjl\n";
+						//}
+
+						//std::cout << reflectionCoeff << "hej\n";
+
+						///* DEBUG */ rayIsTransmitted = true;
+						if (rayIsTransmitted)
+						{
+							Photon refractedPhoton = computeRefractedRay(
+								tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
+							//refractedPhoton.setColor(Color(1000000));
+							refractedPhoton.setColor(currentP.getColor() * (1.f - reflectionCoeff));
+							/*refractedPhoton.setColor(100000.0 * Color(0,1,0));*/
+
+							//std::cout << currentP.getNormalizedDirection() << ' ' << refractedPhoton.getNormalizedDirection() << '\n';
+
+							photonQueue.push(std::move(refractedPhoton));
 						}
-						else if (pFirstIntersectSurfaceType == BRDF::REFLECTOR)
-						{
-							const IntersectionData tempInter = pIntersects[0].intersectionData;
-							Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
-							reflectedPhoton.setColor(currentP.getColor()); //Radiance carries over
-							photonQueue.push(std::move(reflectedPhoton));
-
-							//std::cout << "reflection, i = " << i << ' ' << &currentP.getIntersectedObject()
-							//	<< tempInter._t << '\n';
-							if (isEmittedByLight)
-								addShadowPhotons(pIntersects);
-						}
-						else if (pFirstIntersectSurfaceType == BRDF::TRANSPARENT)
-						{
-							const IntersectionData tempInter = pIntersects[0].intersectionData;
-							float incAngle = glm::angle(-currentP.getNormalizedDirection(), pIntersects[0].intersectionData._normal);
-							double reflectionCoeff, n1, n2;
-							bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
-
-							//std::cout << "refraction, i = " << i << ' ' //<< &currentP.getIntersectedObject() << ' '
-							//	<< tempInter._t << pIntersects[0].first._intersectPoint << ' ' 
-							//	<< currentP.isInsideObject() << ' ' << rayIsTransmitted << ' '
-							//	<< currentP.getNormalizedDirection() << ' '
-							//	<< '\n';
-
-							//if (currentP.isInsideObject())
-							//{
-							//	std::cout << "hejkjl\n";
-							//}
-
-							//std::cout << reflectionCoeff << "hej\n";
-
-							///* DEBUG */ rayIsTransmitted = true;
-							if (rayIsTransmitted)
-							{
-								Photon refractedPhoton = computeRefractedRay(
-									tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
-								//refractedPhoton.setColor(Color(1000000));
-								refractedPhoton.setColor(currentP.getColor() * (1.f - reflectionCoeff));
-								/*refractedPhoton.setColor(100000.0 * Color(0,1,0));*/
-
-								//std::cout << currentP.getNormalizedDirection() << ' ' << refractedPhoton.getNormalizedDirection() << '\n';
-
-								photonQueue.push(std::move(refractedPhoton));
-							}
 						
-							// TODO This cutoff is somewhat arbitrary, and slightly different from in the rendering step.
-							// This is bcs the information needed for that is not available here. It might be a good idea to fix this
-							if (!currentP.isInsideObject())
-							{
-								Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
-								reflectedPhoton.setColor(reflectedPhoton.getColor() * reflectionCoeff);
-								photonQueue.push(std::move(reflectedPhoton));
-							}
+						// TODO This cutoff is somewhat arbitrary, and slightly different from in the rendering step.
+						// This is bcs the information needed for that is not available here. It might be a good idea to fix this
+						if (!currentP.isInsideObject())
+						{
+							Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
+							reflectedPhoton.setColor(reflectedPhoton.getColor() * reflectionCoeff);
+							photonQueue.push(std::move(reflectedPhoton));
 						}
-
-				}
+					}
 				}
 				isEmittedByLight = false; // Remaining photons are reflected/refracted
 			}
@@ -158,10 +144,6 @@ Radiance PhotonMap::getPhotonRadianceContrib(const Direction& incomingDir,
 		roughness = glm::clamp(roughness, 0.0, 1.0);
 
 		photonContrib += roughness * intersectObject->getColor() * p.flux;
-		if (someComponent(photonContrib, static_cast<bool(*)(double)>(std::isnan)))
-		{
-			std::cout << roughness << ' ' << p.flux << ' ' << "hej\n";
-		}
 
 		//if (someComponent(p.flux, [](double d) { return d <= 0; }))
 		//{
