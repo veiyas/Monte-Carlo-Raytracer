@@ -75,8 +75,7 @@ std::chrono::duration<double> Camera::render(Scene& scene)
 		"|  __| | | '_ \\| / __| '_ \\ / _ \\/ _` | |\n"
 		"| |    | | | | | \\__ \\ | | |  __/ (_| |_|\n"
 		"|_|    |_|_| |_|_|___/_| |_|\\___|\\__,_(_)\n";
-	std::cout << finsihedText << scene.getNCalculations() <<
-		" calculations completed in " << durationFormat(duration) << "\n\n";
+	std::cout << finsihedText << " completed in " << durationFormat(duration) << "\n\n";
 	return duration;
 }
 
@@ -155,7 +154,7 @@ void Camera::normalize()
 			if (maxOfPixel > maxIntensity)
 				maxIntensity = maxOfPixel;
 
-			if (someComponent(color, isnan<double>))
+			if (someComponent(color, static_cast<bool(*)(double)>(&std::isnan)))
 				std::cout << "Pixel with NaN detected, value: " << glm::to_string(color) << "\n";
 		}
 
