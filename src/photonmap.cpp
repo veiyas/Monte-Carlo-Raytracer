@@ -1,7 +1,7 @@
 #include "photonmap.hpp"
 #include "util.hpp"
 
-#include <glm/gtx/io.hpp >
+//#include <glm/gtx/io.hpp>
 
 PhotonMap::PhotonMap(const SceneGeometry& geometry)
 	: _photonMap{}, _gen{ std::random_device{}() }, _rng{ 0.f, 1.f }, _deltaFlux{ calculateDeltaFlux() }

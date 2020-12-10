@@ -43,7 +43,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 #
 # Setting some compile settings for the project
 #
-set(CMAKE_CXX_FLAGS "-pthread -no-pie")
+set(CMAKE_CXX_FLAGS "-O2 -pthread -no-pie")
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)

@@ -173,10 +173,10 @@ void RayTree::constructRayTree()
 		}
 		else if (currentSurfaceType == BRDF::DIFFUSE)
 		{
-			//// If photon mapping is used the reflection is handled by the photon map unless in shadow
-			//if (!Config::usePhotonMapping() || (Config::usePhotonMapping() 
-			//                                    && _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint)))
-			if (!Config::usePhotonMapping())
+			// If photon mapping is used the reflection is handled by the photon map unless in shadow
+			if (!Config::usePhotonMapping() ||
+				(Config::usePhotonMapping() && _scene->_photonMap->areShadowPhotonsPresent(currentIntersection._intersectPoint)))
+			//if (!Config::usePhotonMapping())
 			{
 				float rand1 = _rng(_gen);
 				float rand2 = _rng(_gen);
@@ -345,14 +345,7 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 	auto& intersectObject = currentRay->getIntersectedObject().value();
 	auto surfaceType = intersectObject->getBRDF().getSurfaceType();
 
-	Color localLightContribution = Color{ 0 };
-
-
-
-
-
-
-
+	Color localLightContribution{ 0 };
 
 	//// TESTING: Visualizing photon map, dont remove plz ==============================
 	//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
@@ -366,21 +359,14 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 	//else return 1.0 * Color{ 1,0,1 };
 	//// ================================================================================
 
-
-
-
-
-
-
-
 	if (surfaceType != BRDF::TRANSPARENT)
 	{
 		if (Config::usePhotonMapping())
 		{
-			//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
-			//if (!shadowPhotonsPresent)
+			bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
+			if (!shadowPhotonsPresent)
 			//{
-			if (!left)
+			//if (!left)
 			{
 				localLightContribution = _scene->_photonMap->getPhotonRadianceContrib(
 					-currentRay->getNormalizedDirection(), intersectObject, intersectData);

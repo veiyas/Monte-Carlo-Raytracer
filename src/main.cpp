@@ -12,10 +12,10 @@
 int main()
 {
 	auto& config = Config::instance();
-	config.setResolution(800);
-	config.setSamplesPerPixel(10);
+	config.setResolution(200);
+	config.setSamplesPerPixel(1000);
 	config.setMonteCarloTerminationProbability(0.2f);
-	config.setNumShadowRaysPerIntersection(1);
+	config.setNumShadowRaysPerIntersection(1000);
 	config.setUsePhotonMapping(true);
 
 	Scene scene{};
