@@ -1,6 +1,6 @@
 #include "brdf.hpp"
 
-BRDF::BRDF(unsigned surfaceType, bool isLambertian = false)
+BRDF::BRDF(unsigned surfaceType, bool isLambertian)
 	:	_surfaceType{surfaceType}, _isLambertian{ isLambertian }
 {
 
