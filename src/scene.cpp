@@ -52,7 +52,7 @@ Color Scene::raycastScene(Ray& initialRay)
 //			double cosAlpha = glm::dot(-shadowRay.getNormalizedDirection(), light.getNormal());
 //			double cosBeta = glm::dot(shadowRay.getNormalizedDirection(), normal);
 //
-//			double brdf = obj->accessBRDF().computeOrenNayar(
+//			double brdf = obj->accessBRDF().computeBRDF(
 //				shadowRay.getNormalizedDirection(),
 //				-inc.getNormalizedDirection(),
 //				normal);
@@ -186,7 +186,7 @@ void RayTree::constructRayTree()
 				{
 					attachReflectedMonteCarlo(currentIntersection, currentRay, rand1, rand2);
 
-					const double roughness = currentIntersectObject->accessBRDF().computeOrenNayar(
+					const double roughness = currentIntersectObject->accessBRDF().computeBRDF(
 						currentRay->getLeft()->getNormalizedDirection(),
 						-currentRay->getNormalizedDirection(),
 						currentIntersection._normal);

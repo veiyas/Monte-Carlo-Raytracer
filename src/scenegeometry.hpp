@@ -1,4 +1,6 @@
 #pragma once
+#define LAMBERTIAN true
+#define ORENNAYAR false
 
 #include <vector>
 #include <iostream>

@@ -1,16 +1,20 @@
 #include "brdf.hpp"
 
-BRDF::BRDF(unsigned surfaceType)
-	:	_surfaceType{surfaceType}
+BRDF::BRDF(unsigned surfaceType, bool isLambertian = false)
+	:	_surfaceType{surfaceType}, _isLambertian{ isLambertian }
 {
 
 }
 
+double BRDF::computeBRDF(const Direction& incoming, const Direction& shadowRay, const Direction& normal) const
+{
+	return _isLambertian ? computeLambertian() : computeOrenNayar(incoming, shadowRay, normal);
+}
+
 double BRDF::computeOrenNayar(const Direction& incoming, const Direction& shadowRay, const Direction& normal) const
 {
-
-	//Borrowed from https://github.com/kbladin/Monte_Carlo_Ray_Tracer/blob/master/src/Scene.cpp
-	//TODO license
+	//Borrowed from: https://github.com/kbladin/Monte_Carlo_Ray_Tracer/blob/master/src/Scene.cpp
+	//License: https://github.com/kbladin/Monte_Carlo_Ray_Tracer/blob/master/LICENSE
 
 	double A = 1.0 - 0.5 * (_roughnessSquared / (_roughnessSquared + 0.33));
 	double B = 0.45 * (_roughnessSquared / (_roughnessSquared + 0.09));
@@ -24,24 +28,10 @@ double BRDF::computeOrenNayar(const Direction& incoming, const Direction& shadow
 	double cosIncomingShadowRay = glm::dot(incoming, shadowRay);
 
 	double res = (_albedo / 3.1415) * (A + (B * glm::max(0.0, cosIncomingShadowRay)) * glm::sin(alpha) * glm::tan(beta));
-	
-	//if (res > 1e10)
-	//{
-	//	std::cout << "A: " << A << "\n";
-	//	std::cout << "B: " << B << "\n";
-	//	std::cout << "cosThetaIncoming: " << cosThetaIncoming << "\n";
-	//	std::cout << "cosThetaShadowRay: " << cosThetaShadowRay << "\n";
-	//	std::cout << "thetaShadowRay: " << thetaShadowRay << "\n";
-	//	std::cout << "thetaIncoming: " << thetaIncoming << "\n";
-	//	std::cout << "alpha: " << alpha << "\n";
-	//	std::cout << "beta: " << beta << "\n";
-	//	std::cout << "cosIncomingShadowRay: " << cosIncomingShadowRay << "\n";
-	//	std::cout << "res: " << res << "\n\n";
-
-	//	//std::cout << "Incoming: " << glm::to_string(incoming) << "\n";
-	//	//std::cout << "shadowRay: " << glm::to_string(shadowRay) << "\n";
-	//	//std::cout << "normal: " << glm::to_string(normal) << "\n\n";
-	//}
-
 	return glm::min(res, 1.0);
+}
+
+double BRDF::computeLambertian() const
+{
+	return _albedo / glm::pi<double>();
 }

@@ -132,7 +132,7 @@ inline Ray computeRefractedRay(const Direction& normal, const Ray& incomingRay, 
 	const float n1n2 = insideObject ? _glassIndex / _airIndex : _airIndex / _glassIndex;
 	const float NI = glm::dot(normal, incomingDir);
 	const float sqrtExpression = 1 - ((glm::pow(n1n2, 2)) * (1 - glm::pow(NI, 2)));
-
+	
 	Direction refractDir = n1n2 * incomingDir + normal * (-n1n2 * NI
 		- glm::sqrt(sqrtExpression)
 		);
@@ -162,7 +162,7 @@ inline bool shouldRayTransmit(double& n1, double& n2, double& reflectionCoeff, f
 	else
 	{
 		double R0 = pow((n1 - n2) / (n1 + n2), 2);
-		reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
+		reflectionCoeff = std::min(R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5), 1.0);
 		return true;
 	}
 }
@@ -312,7 +312,7 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 			double cosAlpha = glm::dot(-shadowRay.getNormalizedDirection(), light.getNormal());
 			double cosBeta = glm::dot(shadowRay.getNormalizedDirection(), normal);
 
-			double brdf = obj->accessBRDF().computeOrenNayar(
+			double brdf = obj->accessBRDF().computeBRDF(
 				shadowRay.getNormalizedDirection(),
 				-inc.getNormalizedDirection(),
 				normal);

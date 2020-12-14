@@ -65,6 +65,9 @@ PhotonMap::PhotonMap(const SceneGeometry& geometry)
 						float incAngle = glm::angle(-currentP.getNormalizedDirection(), pIntersects[0].intersectionData._normal);
 						double reflectionCoeff, n1, n2;
 						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
+						std::cout << incAngle << "\n";
+
+						
 
 						//std::cout << "refraction, i = " << i << ' ' //<< &currentP.getIntersectedObject() << ' '
 						//	<< tempInter._t << pIntersects[0].first._intersectPoint << ' ' 
@@ -137,7 +140,7 @@ Radiance PhotonMap::getPhotonRadianceContrib(const Direction& incomingDir,
 	Radiance photonContrib{};
 	for (const auto& p : photons)
 	{
-		double roughness = intersectObject->accessBRDF().computeOrenNayar(
+		double roughness = intersectObject->accessBRDF().computeBRDF(
 			incomingDir,
 			p._photonDir,
 			glm::normalize(intersectionData._normal));
@@ -223,7 +226,7 @@ void PhotonMap::handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionSurfa
 			rand1,
 			rand2);
 
-		const double roughness = inter.intersectionObject->accessBRDF().computeOrenNayar(
+		const double roughness = inter.intersectionObject->accessBRDF().computeBRDF(
 			generatedPhoton.getNormalizedDirection(),
 			-currentPhoton.getNormalizedDirection(),
 			inter.intersectionData._normal);
