@@ -12,7 +12,7 @@ static constexpr float PI = 3.1415f;
 static constexpr float TWO_PI = 6.28318f;
 static constexpr float _airIndex = 1.f;
 static constexpr float _glassIndex = 1.5f;
-static constexpr float _reflectionOffset = 0.001;
+static constexpr float _reflectionOffset = 0.01;
 
 // TEMPORARY DECLARATIONS
 inline bool pathIsVisible(Ray& ray, const Direction& normal, const SceneGeometry& scene);
@@ -162,7 +162,7 @@ inline bool shouldRayTransmit(double& n1, double& n2, double& reflectionCoeff, f
 	else
 	{
 		double R0 = pow((n1 - n2) / (n1 + n2), 2);
-		reflectionCoeff = std::min(R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5), 1.0);
+		reflectionCoeff = std::min(R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5), 0.99999);
 		return true;
 	}
 }

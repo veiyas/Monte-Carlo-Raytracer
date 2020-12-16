@@ -7,6 +7,8 @@
 #include <kdtree.hpp>
 #include <mutex>
 #include <variant>
+#include <algorithm>
+#include <numeric>
 
 #include "ray.hpp"
 #include "brdf.hpp"
@@ -38,19 +40,23 @@ public:
 private:
 	KDTree::KDTree<3, PhotonNode> _photonMap;
 	KDTree::KDTree<3, PhotonNode> _shadowPhotonMap;
+
 	std::mutex _mutex;
 	double _deltaFlux;
 
 	std::mt19937 _gen;
 	std::uniform_real_distribution<float> _rng;
 
-	void addShadowPhotons(std::vector<IntersectionSurface>& inputData);
+	void photonMapBuilderThreadFn(const SceneGeometry& geometry, std::vector<PhotonNode>& pMap,
+		std::vector<PhotonNode>& spMap, size_t photonsToCast);
+
+	void addShadowPhotons(std::vector<IntersectionSurface>& inputData, std::vector<PhotonNode>& spMap);
 	void addPhoton(PhotonNode&& currentPhoton, std::vector<PhotonNode>& photonData);
 	void getPhotons(std::vector<PhotonNode>& foundPhotons, const PhotonNode& searchPoint);
 	Ray generateRandomPhotonFromLight(const float x, const float y);
 	constexpr float calculateDeltaFlux() const;
 	void handleMonteCarloPhoton(std::queue<Ray>& queue, IntersectionSurface& inter, Photon& currentPhoton);
 
-	static constexpr float SEARCH_RANGE = 0.0001f;
-	static constexpr size_t N_PHOTONS_TO_CAST = 50'000'000;
+	static constexpr float SEARCH_RANGE = 0.01f;
+	static constexpr size_t N_PHOTONS_TO_CAST = 5'000'000;
 };

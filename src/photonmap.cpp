@@ -1,120 +1,61 @@
 #include "photonmap.hpp"
 #include "util.hpp"
 
-//#include <glm/gtx/io.hpp>
-
 PhotonMap::PhotonMap(const SceneGeometry& geometry)
-	: _photonMap{}, _gen{ std::random_device{}() }, _rng{ 0.f, 1.f }, _deltaFlux{ calculateDeltaFlux() }
+	: _photonMap{}, _gen{ std::random_device{}() }, _rng{ 0.f, 1.f },
+	_deltaFlux{ calculateDeltaFlux() }
 {
 	auto startTime = std::chrono::high_resolution_clock::now();
-	std::cout << "Constructing photon map...   ";
 
-	std::vector<CeilingLight> lights = geometry._ceilingLights;
-	for (const auto& light : lights)
+	size_t numCores = std::thread::hardware_concurrency();
+	numCores = numCores == 0 ? 1 : numCores;
+
+	std::cout << "Constructing photon map using " << numCores << " threads.\n";
+
+	const size_t PHOTONS_PER_THREAD = N_PHOTONS_TO_CAST / numCores;
+	std::vector<std::vector<PhotonNode>> pVectors, spVectors;
+	pVectors.resize(numCores);
+	spVectors.resize(numCores);
+
+	std::cout << "Gathering photon data... ";
+	auto startTime2 = std::chrono::high_resolution_clock::now();
+	std::vector<std::thread> threads;
+	for (size_t i{ 0 }; i < numCores; i++)
+		threads.push_back(std::thread(
+			&PhotonMap::photonMapBuilderThreadFn, this, std::ref(geometry), std::ref(pVectors[i]), std::ref(spVectors[i]), PHOTONS_PER_THREAD));
+	for (auto& thread : threads)
+		thread.join();
+
+	//The most elaborate way to calculate the total amount of photons B)
+	size_t nPhotonsCasted = std::accumulate(
+		pVectors.begin(), pVectors.end(), 0u, [](const size_t& currSize, const std::vector<PhotonNode>& v){return currSize + v.size();});
+
+	//Merge all photon data into one large vector
+	std::vector<PhotonNode> allPhotons, allShadowPhotons;
+	allPhotons.reserve(nPhotonsCasted);
+	allShadowPhotons.reserve(nPhotonsCasted);
+	for (size_t i = 0; i < pVectors.size(); i++)
 	{
-		const auto lightCenterPoints = light.getCenterPoints();
-		const float xCenter = lightCenterPoints.first - 0.5f;
-		const float yCenter = lightCenterPoints.second - 0.5f;
-		std::vector<PhotonNode> photonData;
-		photonData.reserve(N_PHOTONS_TO_CAST*10u);
-
-		for (size_t i = 0; i < N_PHOTONS_TO_CAST; i++)
-		{
-			bool isEmittedByLight = true;
-			std::queue<Photon> photonQueue;
-
-			Photon initialPhoton = generateRandomPhotonFromLight(xCenter, yCenter);
-			photonQueue.push(std::move(initialPhoton));
-
-			while(!photonQueue.empty())
-			{
-				std::vector<IntersectionSurface> pIntersects;
-				Photon currentP = std::move(photonQueue.front());
-				photonQueue.pop();
-
-				photonIntersection(currentP, geometry, pIntersects);
-
-				if (pIntersects.size() != 0)
-				{
-					const unsigned pFirstIntersectSurfaceType = pIntersects[0].intersectionObject->getBRDF().getSurfaceType();
-					if (pFirstIntersectSurfaceType == BRDF::DIFFUSE)
-					{
-						Radiance pFlux = _deltaFlux * currentP.getColor();
-						addPhoton(PhotonNode{ pIntersects[0].intersectionData._intersectPoint, pFlux, currentP.getNormalizedDirection() },
-							photonData);
-						handleMonteCarloPhoton(photonQueue, pIntersects[0], currentP);
-
-						if (isEmittedByLight)
-							addShadowPhotons(pIntersects);
-					}
-					else if (pFirstIntersectSurfaceType == BRDF::REFLECTOR)
-					{
-						const IntersectionData tempInter = pIntersects[0].intersectionData;
-						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
-						reflectedPhoton.setColor(currentP.getColor()); //Radiance carries over
-						photonQueue.push(std::move(reflectedPhoton));
-
-						//std::cout << "reflection, i = " << i << ' ' << &currentP.getIntersectedObject()
-						//	<< tempInter._t << '\n';
-						if (isEmittedByLight)
-							addShadowPhotons(pIntersects);
-					}
-					else if (pFirstIntersectSurfaceType == BRDF::TRANSPARENT)
-					{
-						const IntersectionData tempInter = pIntersects[0].intersectionData;
-						float incAngle = glm::angle(-currentP.getNormalizedDirection(), pIntersects[0].intersectionData._normal);
-						double reflectionCoeff, n1, n2;
-						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
-						std::cout << incAngle << "\n";
-
-						
-
-						//std::cout << "refraction, i = " << i << ' ' //<< &currentP.getIntersectedObject() << ' '
-						//	<< tempInter._t << pIntersects[0].first._intersectPoint << ' ' 
-						//	<< currentP.isInsideObject() << ' ' << rayIsTransmitted << ' '
-						//	<< currentP.getNormalizedDirection() << ' '
-						//	<< '\n';
-
-						//if (currentP.isInsideObject())
-						//{
-						//	std::cout << "hejkjl\n";
-						//}
-
-						//std::cout << reflectionCoeff << "hej\n";
-
-						///* DEBUG */ rayIsTransmitted = true;
-						if (rayIsTransmitted)
-						{
-							Photon refractedPhoton = computeRefractedRay(
-								tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
-							//refractedPhoton.setColor(Color(1000000));
-							refractedPhoton.setColor(currentP.getColor() * (1.f - reflectionCoeff));
-							/*refractedPhoton.setColor(100000.0 * Color(0,1,0));*/
-
-							//std::cout << currentP.getNormalizedDirection() << ' ' << refractedPhoton.getNormalizedDirection() << '\n';
-
-							photonQueue.push(std::move(refractedPhoton));
-						}
-						
-						// TODO This cutoff is somewhat arbitrary, and slightly different from in the rendering step.
-						// This is bcs the information needed for that is not available here. It might be a good idea to fix this
-						if (!currentP.isInsideObject())
-						{
-							Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
-							reflectedPhoton.setColor(reflectedPhoton.getColor() * reflectionCoeff);
-							photonQueue.push(std::move(reflectedPhoton));
-						}
-					}
-				}
-				isEmittedByLight = false; // Remaining photons are reflected/refracted
-			}
-		}
-		_photonMap.efficient_replace_and_optimise(photonData);
+		std::move(pVectors[i].begin(), pVectors[i].end(), std::back_inserter(allPhotons));
+		std::move(spVectors[i].begin(), spVectors[i].end(), std::back_inserter(allShadowPhotons));
 	}
+	auto endTime2 = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> duration = endTime2 - startTime2;
+	std::cout << "done!\nPhoton data gathered in " << durationFormat(duration) << ".\n";
+	
+	std::cout << "Creating photon map with gathered data... ";
+	startTime2 = std::chrono::high_resolution_clock::now();
+	_photonMap.efficient_replace_and_optimise(allPhotons);
+	_shadowPhotonMap.efficient_replace_and_optimise(allShadowPhotons);
+	endTime2 = std::chrono::high_resolution_clock::now();
+	duration = endTime2 - startTime2;
+	std::cout << "done!\nPhoton map constructed in " << durationFormat(duration) << ".\n";
+
 	auto endTime = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> duration = endTime - startTime;
-	std::cout << "done!\nPhoton map with " << _photonMap.size() << " photons constructed in " << duration.count() << " seconds.\n"
-		<< static_cast<long long int>(_photonMap.size() - N_PHOTONS_TO_CAST) << " extra photons were created from monte carlo technique and specular surfaces.\n\n";
+	duration = endTime - startTime;
+	std::cout << "\nPhoton map with " << nPhotonsCasted
+		<< " photons constructed in " << durationFormat(duration) << "\n"
+		<< nPhotonsCasted - N_PHOTONS_TO_CAST << " photons created from diffuse and specular reflection.\n";
 }
 
 void PhotonMap::getPhotons(std::vector<PhotonNode>& foundPhotons, const PhotonNode& searchPoint)
@@ -159,18 +100,128 @@ Radiance PhotonMap::getPhotonRadianceContrib(const Direction& incomingDir,
 	//}
 
 	//photonContrib /= (PI * glm::pow(PhotonMap::SEARCH_RANGE, 2.0));
+	//if (photonContrib.x > 1.0 || photonContrib.y > 1.0 || photonContrib.z > 1.0)
+	//	std::cout << photonContrib.x << " " << photonContrib.y << " " << photonContrib.z << ' ' << "\n";
 	photonContrib /= (glm::pow(2 * PhotonMap::SEARCH_RANGE, 2.0)); // try to compensate for the non-euclidian distance
 
 	return photonContrib;
 }
 
-void PhotonMap::addShadowPhotons(std::vector<IntersectionSurface>& inputData)
+void PhotonMap::photonMapBuilderThreadFn(const SceneGeometry& geometry, std::vector<PhotonNode>& pMap,
+	std::vector<PhotonNode>& spMap, size_t photonsToCast)
 {
-	std::lock_guard<std::mutex> tempLock{ this->_mutex };
+	std::vector<CeilingLight> lights = geometry._ceilingLights;
+	for (const auto& light : lights)
+	{
+		const auto lightCenterPoints = light.getCenterPoints();
+		const float xCenter = lightCenterPoints.first - 0.5f;
+		const float yCenter = lightCenterPoints.second - 0.5f;
+		std::vector<PhotonNode>& photonData = pMap;
+		photonData.reserve(photonsToCast*4u);
+
+		for (size_t i = 0; i < photonsToCast; i++)
+		{
+			bool isEmittedByLight = true;
+			std::queue<Photon> photonQueue;
+
+			Photon initialPhoton = generateRandomPhotonFromLight(xCenter, yCenter);
+			photonQueue.push(std::move(initialPhoton));
+
+			while(!photonQueue.empty())
+			{
+				std::vector<IntersectionSurface> pIntersects;
+				Photon currentP = std::move(photonQueue.front());
+				photonQueue.pop();
+
+				photonIntersection(currentP, geometry, pIntersects);
+
+				if (pIntersects.size() != 0)
+				{
+					const unsigned pFirstIntersectSurfaceType = pIntersects[0].intersectionObject->getBRDF().getSurfaceType();
+					if (pFirstIntersectSurfaceType == BRDF::DIFFUSE)
+					{
+						Radiance pFlux = _deltaFlux * currentP.getColor();
+						addPhoton(PhotonNode{ pIntersects[0].intersectionData._intersectPoint, pFlux, currentP.getNormalizedDirection() },
+							photonData);
+						handleMonteCarloPhoton(photonQueue, pIntersects[0], currentP);
+
+						if (isEmittedByLight)
+							addShadowPhotons(pIntersects, spMap);
+					}
+					else if (pFirstIntersectSurfaceType == BRDF::REFLECTOR)
+					{
+						const IntersectionData tempInter = pIntersects[0].intersectionData;
+						Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
+						reflectedPhoton.setColor(currentP.getColor()); //Radiance carries over
+						photonQueue.push(std::move(reflectedPhoton));
+
+						//std::cout << "reflection, i = " << i << ' ' << &currentP.getIntersectedObject()
+						//	<< tempInter._t << '\n';
+						if (isEmittedByLight)
+							addShadowPhotons(pIntersects, spMap);
+					}
+					else if (pFirstIntersectSurfaceType == BRDF::TRANSPARENT)
+					{
+						const IntersectionData tempInter = pIntersects[0].intersectionData;
+						float incAngle = glm::angle(-currentP.getNormalizedDirection(), pIntersects[0].intersectionData._normal);
+						double reflectionCoeff, n1, n2;
+						bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, currentP);
+
+					
+
+						//std::cout << "refraction, i = " << i << ' ' //<< &currentP.getIntersectedObject() << ' '
+						//	<< tempInter._t << pIntersects[0].first._intersectPoint << ' ' 
+						//	<< currentP.isInsideObject() << ' ' << rayIsTransmitted << ' '
+						//	<< currentP.getNormalizedDirection() << ' '
+						//	<< '\n';
+
+						//if (currentP.isInsideObject())
+						//{
+						//	std::cout << "hejkjl\n";
+						//}
+
+						//std::cout << reflectionCoeff << "hej\n";
+
+						///* DEBUG */ rayIsTransmitted = true;
+						if (rayIsTransmitted)
+						{
+							Photon refractedPhoton = computeRefractedRay(
+								tempInter._normal, currentP, tempInter._intersectPoint, currentP.isInsideObject());
+							//refractedPhoton.setColor(Color(1000000));
+							refractedPhoton.setColor(currentP.getColor() * (1.f - reflectionCoeff));
+							const auto& color = refractedPhoton.getColor();
+
+							//if (color.x > 1.0 || color.y > 1.0 || color.z > 1.0)
+							//	std::cout << color.x << " " << color.y << " " << color.z << "\n";
+
+							//std::cout << currentP.getNormalizedDirection() << ' ' << refractedPhoton.getNormalizedDirection() << '\n';
+
+							photonQueue.push(std::move(refractedPhoton));
+						}
+					
+						// TODO This cutoff is somewhat arbitrary, and slightly different from in the rendering step.
+						// This is bcs the information needed for that is not available here. It might be a good idea to fix this
+						if (!currentP.isInsideObject())
+						{
+							Photon reflectedPhoton = computeReflectedRay(tempInter._normal, currentP, tempInter._intersectPoint);
+							reflectedPhoton.setColor(reflectedPhoton.getColor() * reflectionCoeff);
+							photonQueue.push(std::move(reflectedPhoton));
+						}
+					}
+				}
+				isEmittedByLight = false; // Remaining photons are reflected/refracted
+			}
+		}
+	}
+}
+
+void PhotonMap::addShadowPhotons(std::vector<IntersectionSurface>& inputData, std::vector<PhotonNode>& spMap)
+{
+	//std::lock_guard<std::mutex> tempLock{ this->_mutex };
 	for (size_t i = 1; i < inputData.size(); i++)
 	{
 		auto tempInter = inputData[i].intersectionData;
-		_shadowPhotonMap.insert((PhotonNode{tempInter._intersectPoint}));
+		spMap.push_back((PhotonNode{tempInter._intersectPoint}));
 	}
 }
 
