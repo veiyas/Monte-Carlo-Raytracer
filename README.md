@@ -1,4 +1,4 @@
-<img align="left" width="230" height="230" src="readme-img.png">
+<img align="left" width="300" height="300" src="readme-img.png">
 
 # Monte Carlo Ray Tracer
 
