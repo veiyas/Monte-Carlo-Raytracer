@@ -81,8 +81,8 @@ Sphere::Sphere(BRDF brdf, float radius, Color color, Vertex position)
 
 std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 {
-	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
-	glm::vec3 rayEnd{ arg.getEnd().x, arg.getEnd().y, arg.getEnd().z };
+	glm::vec3 rayStart{ arg.getStart() };
+	glm::vec3 rayEnd{ arg.getEnd() };
 	glm::vec3 rayDirectionNormalized = glm::normalize(rayEnd - rayStart);
 
 	glm::vec3 o_c = rayStart - glm::vec3{ _position.x, _position.y, _position.z };
@@ -135,8 +135,8 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 
 void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFilled) const
 {
-	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
-	glm::vec3 rayEnd{ arg.getEnd().x, arg.getEnd().y, arg.getEnd().z };
+	glm::vec3 rayStart{ arg.getStart() };
+	glm::vec3 rayEnd{ arg.getEnd() };
 	glm::vec3 rayDirectionNormalized = glm::normalize(rayEnd - rayStart);
 
 	glm::vec3 o_c = rayStart - glm::vec3{ _position.x, _position.y, _position.z };

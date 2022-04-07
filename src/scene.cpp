@@ -4,6 +4,7 @@
 
 #include "ray.hpp"
 #include "util.hpp"
+#include "raycastingfunctions.hpp"
 
 Scene::Scene()
 	: _nCalculations{ 0 },
@@ -30,7 +31,6 @@ RayTree::RayTree(Ray& initialRay, Scene* scene)
 	  _scene{ scene }
 {
 	_head = std::make_unique<Ray>(initialRay);
-	_treeSize = 1;
 }
 
 void RayTree::raytracePixel()
@@ -85,8 +85,7 @@ void RayTree::constructRayTree()
 			{
 				float rand1 = _rng(_gen);
 				float rand2 = _rng(_gen);
-				if (rand1 + Config::monteCarloTerminationProbability() > 1.f) //Terminate ray
-					;
+				if (rand1 + Config::monteCarloTerminationProbability() > 1.f); //Terminate ray
 				else
 				{
 					attachReflectedMonteCarlo(currentIntersection, currentRay, rand1, rand2);

@@ -14,7 +14,6 @@ static constexpr float _airIndex = 1.f;
 static constexpr float _glassIndex = 1.5f;
 static constexpr float _reflectionOffset = 0.01;
 
-// TEMPORARY DECLARATIONS
 inline bool pathIsVisible(Ray& ray, const Direction& normal, const SceneGeometry& scene);
 
 /************************
@@ -114,8 +113,6 @@ inline void photonIntersection(Ray& ray, const SceneGeometry& geometry, std::vec
 inline Ray computeReflectedRay(const Direction& normal, const Ray& incomingRay, const Vertex& intersectionPoint)
 {
 	Direction incomingRayDirection = incomingRay.getNormalizedDirection();
-	//Angle between normal and incoming ray
-	//float angle = glm::angle(normal, incomingRayDirection);
 
 	Direction reflectedDirection =
 		incomingRayDirection - 2.f * (glm::dot(incomingRayDirection, normal)) * normal;
@@ -252,9 +249,6 @@ inline double shadowRayContribution(const Vertex& point, const Vertex& lightPoin
 		return normalDotContribution * pathIsVisible(shadowRay, normal, scene);
 	}
 }
-
-
-// NEW STUFF
 
 inline bool pathIsVisible(Ray& ray, const Direction& normal, const SceneGeometry& scene)
 {

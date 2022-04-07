@@ -18,12 +18,6 @@ Triangle::Triangle(Vertex v1, Vertex v2, Vertex v3, Color color)
 	_normal = glm::cross(v2v1, v3v2);
 }
 
-Triangle::Triangle(Vertex v, Direction normal, const Color& color)
-	: _v1{ v }, _v2{ v }, _v3{ v }, _normal{ normal }, _color{ color }
-{
-
-}
-
 Vertex Triangle::getCenter() const
 {
 	return Vertex{
@@ -33,7 +27,7 @@ Vertex Triangle::getCenter() const
 		1.f };
 }
 
-float Triangle::rayIntersection(Ray& arg) const
+float Triangle::rayIntersection(const Ray& arg) const
 {
 	// Moller Trumbore algorithm
 	glm::vec3 T = arg.getStart() - _v1;

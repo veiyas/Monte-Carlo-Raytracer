@@ -74,7 +74,7 @@ std::chrono::duration<double> Camera::render(Scene& scene)
 		"|  __| | | '_ \\| / __| '_ \\ / _ \\/ _` | |\n"
 		"| |    | | | | | \\__ \\ | | |  __/ (_| |_|\n"
 		"|_|    |_|_| |_|_|___/_| |_|\\___|\\__,_(_)\n";
-	std::cout << finsihedText << " completed in " << durationFormat(duration) << "\n\n";
+	std::cout << finsihedText << "completed in " << durationFormat(duration) << "\n\n";
 	return duration;
 }
 
@@ -82,6 +82,7 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 {
 	for (int col = 0; col < WIDTH; ++col)
 	{
+			// Small offsets for antialiasing
 			float yOffset = _rng(_gen);
 			float zOffset = _rng(_gen);
 

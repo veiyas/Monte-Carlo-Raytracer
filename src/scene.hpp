@@ -16,7 +16,6 @@
 #include "shapes.hpp"
 #include "config.hpp"
 #include "photonmap.hpp"
-#include "raycastingfunctions.hpp"
 #include "scenegeometry.hpp"
 
 class Scene
@@ -39,9 +38,6 @@ private:
 	mutable std::mt19937 _gen;
 	mutable std::uniform_real_distribution<float> _rng;
 	
-	//TODO these things maybe fits better in RayTree
-	//They def fits better as object properties, hehe
-	//At leas the glass one
 	static constexpr float _airIndex = 1.f;
 	static constexpr float _glassIndex = 1.5f;
 };
@@ -57,7 +53,6 @@ public:
 private:
 	std::unique_ptr<Ray> _head;
 	Color _finalColor;
-	size_t _treeSize;
 	Scene* _scene;
 
 	constexpr static size_t _maxTreeSize = 512;
