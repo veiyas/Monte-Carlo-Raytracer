@@ -5,10 +5,6 @@
 Ray::Ray(Vertex start, Vertex end)
 	: _rayColor{ Color{ 1.0, 1.0, 1.0 } }
 {
-	// DEBUG
-	//if (glm::abs(start.w - 1) > 0.0001 || abs(end.w - 1) > 0.0001)
-	//	std::cout << "Ooops, w != 1\n";
-
 	_start = std::make_unique<Vertex>(start);
 	_end = std::make_unique<Vertex>(end);
 }
@@ -22,11 +18,11 @@ Ray::Ray(Vertex start, Vertex end, Color color)
 Ray::Ray(Ray& ray)
 {
 	// TODO Using std::move when making a copy seems weird, is it correct?
+	// It really can't be. I have no idea why this was ever done
 	_left = std::move(ray._left);
 	_right = std::move(ray._right);
 	_start = std::move(ray._start);
 	_end = std::move(ray._end);
-	//_endTriangle = std::move(ray._endTriangle);
 
 	_rayColor = ray._rayColor;
 	_isInsideObject = ray._isInsideObject;

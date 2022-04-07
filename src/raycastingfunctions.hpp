@@ -155,7 +155,6 @@ inline bool shouldRayTransmit(double& n1, double& n2, double& reflectionCoeff, f
 	float brewsterAngle = asin(n2 / n1); // In radians
 	if (currentRay.isInsideObject() && incAngle > brewsterAngle) // Total internal reflection
 	{
-		//std::cout << incAngle << '\n';
 		reflectionCoeff = 1.f;
 		return false;
 	}
@@ -320,15 +319,13 @@ inline Color localAreaLightContribution(const Ray& inc, const Vertex& point,
 			if (lightDistance == 0)
 				std::cout << "panikorkester\n";
 
-			//brdf = 1;
 			acc += brdf * glm::clamp(cosAlpha * cosBeta, 0.0, 1.0) / (lightDistance * lightDistance);
-			//acc += brdf * cosAlpha * cosBeta / (lightDistance * lightDistance);
 		}
 	}
 
-	// TODO Hard coding area is ofc terrible
+	// TODO Hard coding area is ofc not great
 	constexpr double lightArea = 1;
-	// TODO Is it correct that L0 is the color of the light?
+
 	constexpr double L0 = 1000.0 / (glm::pi<double>() * lightArea);
 	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / Config::numShadowRaysPerIntersection()));
 

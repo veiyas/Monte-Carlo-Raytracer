@@ -18,7 +18,6 @@ public:
 	SceneObject(BRDF brdf, Color color)
 		: _brdf{ std::move(brdf) }, _color{ color } {}
 
-	//virtual std::optional<IntersectionData> rayIntersection(Ray& arg) const = 0;
 	const BRDF& accessBRDF() const { return _brdf; }
 	BRDF getBRDF() const { return _brdf; }
 	Color getColor() const { return _color; }
@@ -27,7 +26,6 @@ private:
 	Color _color;
 };
 
-//using IntersectionSurface = std::tuple<IntersectionData, unsigned, Color>;
 struct IntersectionSurface
 {
 	IntersectionData intersectionData;

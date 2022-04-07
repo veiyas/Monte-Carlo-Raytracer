@@ -24,55 +24,6 @@ Color Scene::raycastScene(Ray& initialRay)
 	tree.raytracePixel();
 	return tree.getPixelColor();
 }
-//
-//Color Scene::localAreaLightContribution(const Ray& inc, const Vertex& point, 
-//                                        const Direction& normal, const SceneObject* obj) const
-//{
-//	// TODO Adapt for varying amout of lights
-//	auto light = _ceilingLights[0];
-//
-//	double acc = 0;
-//
-//	for (size_t i = 0; i < _config.numShadowRaysPerIntersection; i++)
-//	{
-//		float rand1 = _rng(_gen);
-//		float rand2 = _rng(_gen);
-//		// Define local coord.system at light surface
-//		glm::vec3 v1 = light.leftFar - light.leftClose;
-//		glm::vec3 v2 = light.rightClose - light.leftClose;
-//		// Transform to global
-//		glm::vec3 randPointAtLight = glm::vec3(light.leftClose) + rand1 * v1 + rand2 * v2;
-//
-//		glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 0);
-//		Ray shadowRay{ point + offset, Vertex{ randPointAtLight, 1.0f } };
-//
-//		if (pathIsVisible(shadowRay, normal, _sceneGeometry))
-//		{
-//			double lightDistance = glm::length(randPointAtLight - glm::vec3(point));
-//			double cosAlpha = glm::dot(-shadowRay.getNormalizedDirection(), light.getNormal());
-//			double cosBeta = glm::dot(shadowRay.getNormalizedDirection(), normal);
-//
-//			double brdf = obj->accessBRDF().computeBRDF(
-//				shadowRay.getNormalizedDirection(),
-//				-inc.getNormalizedDirection(),
-//				normal);
-//
-//			if (lightDistance == 0)
-//				std::cout << "panikorkester\n";
-//
-//			brdf = 1;
-//			acc += brdf * glm::clamp(cosAlpha * cosBeta, 0.0, 1.0) / (lightDistance * lightDistance);
-//		}
-//	}
-//
-//	// TODO Hard coding area is ofc terrible
-//	double lightArea = 1;
-//	// TODO Is it correct that L0 is the color of the light?
-//	Color L0 = light.getColor();
-//	Color returnValue = acc * obj->getColor() * (lightArea * L0 * (1.0 / _config.numShadowRaysPerIntersection));
-//
-//	return returnValue;
-//}
 
 RayTree::RayTree(Ray& initialRay, Scene* scene)
 	: _gen{ std::random_device{}() }, _rng{ 0.f, 1.f },
@@ -87,52 +38,6 @@ void RayTree::raytracePixel()
 	constructRayTree();
 	_finalColor = traverseRayTree(_head.get(), false);
 }
-
-//// TODO Replace with raycastingfunctions
-//Ray RayTree::generateRandomReflectedRay(const Direction& initialDirection, const Direction& normal, const Vertex& intersectPoint, float rand1, float rand2)
-//{
-//
-//	//Determine local coordinate system and transformations matrices for it
-//	const glm::vec3 Z{ normal };
-//	const glm::vec3 X = glm::normalize(initialDirection - glm::dot(initialDirection, Z) * Z);
-//	const glm::vec3 Y = glm::cross(-X, Z);
-//	/* GLM: Column major order
-//	 0  4  8  12
-//	 1  5  9  13
-//	 2  6 10  14
-//	 3  7 11  15
-//	*/
-//	const glm::mat4 toLocalCoord =
-//		glm::mat4{
-//		X.x, Y.x, Z.x, 0.f,
-//		X.y, Y.y, Z.y, 0.f,
-//		X.z, Y.z, Z.z, 0.f,
-//		0.f, 0.f, 0.f, 1.f } *
-//		glm::mat4{
-//		1.f, 0.f, 0.f, 0.f,
-//		0.f, 1.f, 0.f, 0.f,
-//		0.f, 0.f, 1.f, 0.f,
-//		-intersectPoint.x, -intersectPoint.y, -intersectPoint.z, 1.f
-//	};
-//	const glm::mat4 toGlobalCoord = glm::inverse(toLocalCoord);
-//
-//	// Generate random azimuth (phi) and inclination (theta)
-//	// Phi is caled to compensate for decreased range of rand1 since the ray is terminated 
-//	// russian roulette for high values for rand1
-//	const float phi = (glm::two_pi<float>() / (1 - _config.monteCarloTerminationProbability)) * rand1;
-//	const float theta = glm::asin(glm::sqrt(rand2));
-//	const float x = glm::cos(phi) * glm::sin(theta);
-//	const float y = glm::sin(phi) * glm::sin(theta);
-//	const float z = glm::cos(theta);
-//
-//	const glm::vec4 globalReflected = toGlobalCoord * glm::vec4{ glm::normalize(glm::vec3(x, y, z)), 1.f };
-//
-//	//Debug helper
-//	//const glm::vec3 globalDirection{ glm::normalize(glm::vec3{globalReflected.x, globalReflected.y, globalReflected.z })};
-//
-//	glm::vec4 offset = glm::vec4(normal * _reflectionOffset, 0);
-//	return Ray{ intersectPoint + offset, globalReflected };
-//}
 
 void RayTree::constructRayTree()
 {
@@ -226,18 +131,10 @@ void RayTree::constructRayTree()
 				bool isReflected = currentRay->getParent()->getLeft() == currentRay;
 				if (isReflected)
 				{
-					//std::cout << "test!\n";
 					continue;
 				}
 			}
 			else // Transmission occurs, Schlicks equation for radiance distribution
-
-			// TODO Incorporate these changes with the method below and clean up
-//=======
-//			bool rayIsTransmitted = shouldRayTransmit(n1, n2, reflectionCoeff, incAngle, *currentRay);
-//
-//			if(rayIsTransmitted) // Transmission occurs, Schlicks equation for radiance distribution
-//>>>>>>> master
 			{
 				double R0 = pow((n1 - n2) / (n1 + n2), 2);
 				reflectionCoeff = R0 + (1 - R0) * pow(1.0 - cos(incAngle), 5);
@@ -261,68 +158,6 @@ void RayTree::constructRayTree()
 	}
 }
 
-// I leave this here for now -- the plan is to rewrite the new version to be iterative,
-// and this will be a useful reference
-//Color Scene::RayTree::traverseRayTree(Ray* input, bool isMonteCarloTree) const
-//{
-//	Ray* currentRay = input;
-//	Color result{};
-//
-//	while (currentRay != nullptr)
-//	{
-//
-//		Ray* left = currentRay->getLeft();
-//		Ray* right = currentRay->getRight();
-//
-//		// TODO Local lighting model contibutions
-//
-//		// TODO Ideally the ray should always intersect something
-//		if (currentRay->getIntersectionData().has_value() == false)
-//			return result;
-//		//auto surfaceType = currentRay->getIntersectedObject().value()->getBRDF();
-//		auto& intersectData = currentRay->getIntersectionData().value();
-//		auto& intersectObject = currentRay->getIntersectedObject().value();
-//		//Color localLightContribution = 
-//		//	currentRay->getColor()
-//		//	* intersectObject->getColor()
-//		//	* shadowRayContribution(intersectData._intersectPoint, intersectData._normal);
-//		Color localLightContribution = /*currentRay->getColor() */ localAreaLightContribution(
-//			*currentRay,
-//			intersectData._intersectPoint,
-//			intersectData._normal,
-//			intersectObject);
-//
-//		if (left == nullptr && right == nullptr)
-//		{
-//			//auto returnValue = currentRay->getColor() * intersectObject->getColor()
-//			//	* shadowRayContribution(intersectData._intersectPoint,
-//			//		intersectData._normal);
-//			return localLightContribution;
-//			//return ;
-//		}
-//		else if (left && right == nullptr)
-//		{
-//			//result += localLightContribution;
-//			currentRay = left;
-//		}
-//		else if (left == nullptr && right)
-//		{
-//			//result += localLightContribution;
-//			currentRay = right;
-//		}
-//		else if (left && right)
-//		{
-//			Color leftSubContrib = traverseRayTree(currentRay->getLeft(), isMonteCarloTree) * currentRay->getLeft()->getColor();
-//			Color rightSubContrib = traverseRayTree(currentRay->getRight(), isMonteCarloTree) * currentRay->getRight()->getColor();
-//
-//			result += (leftSubContrib + rightSubContrib) / currentRay->getColor();
-//			//return (leftSubContrib + rightSubContrib);
-//		}
-//	}
-//	return result;
-//}
-
-
 // THIS IS COMPLETELY RECURSIVE FOR NOW; i cant be bothered to figure out any other 
 // way atm
 Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
@@ -340,24 +175,11 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 	if (currentRay->getIntersectionData().has_value() == false)
 		return Color{ 0 };
 
-	//auto surfaceType = currentRay->getIntersectedObject().value()->getBRDF();
 	auto& intersectData = currentRay->getIntersectionData().value();
 	auto& intersectObject = currentRay->getIntersectedObject().value();
 	auto surfaceType = intersectObject->getBRDF().getSurfaceType();
 
 	Color localLightContribution{ 0 };
-
-	//// TESTING: Visualizing photon map, dont remove plz ==============================
-	//bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
-	//if (!shadowPhotonsPresent)
-	//{
-	//	Color photonContrib = _scene->_photonMap->getPhotonRadianceContrib(
-	//		-currentRay->getNormalizedDirection(), intersectObject, intersectData);
-
-	//	return photonContrib;
-	//}
-	//else return 1.0 * Color{ 1,0,1 };
-	//// ================================================================================
 
 	if (surfaceType != BRDF::TRANSPARENT)
 	{
@@ -365,7 +187,6 @@ Color RayTree::traverseRayTree(Ray* input, bool hasBeenDiffuselyReflected) const
 		{
 			bool shadowPhotonsPresent = _scene->_photonMap->areShadowPhotonsPresent(intersectData._intersectPoint);
 			if (!shadowPhotonsPresent)
-			//{
 			//if (!left)
 			{
 				localLightContribution = _scene->_photonMap->getPhotonRadianceContrib(

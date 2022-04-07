@@ -32,7 +32,6 @@ std::chrono::duration<double> Camera::render(Scene& scene)
 
 	for (int i = 0; i < Config::samplesPerPixel(); i++)
 	{
-		
 		// Give some indication of progress in a not so elegant way
 		if (i % feedbackCheckpointMod == 0 && i != 0)
 		{
@@ -96,20 +95,8 @@ void Camera::renderThreadFunction(int row, Scene& scene)
 			auto ray = std::make_shared<Ray>(Config::eyeToggle() ? _eyePoint1 : _eyePoint2, pixelPoint, Color{ 1.0, 1.0, 1.0 });
 
 			_pixels[row][col].addRay(ray);
-
-			// Testing
-			//auto oldPixelVal = _pixels[row][col]._color;
-
 			Color contrib = scene.raycastScene(*ray);
 			_pixels[row][col]._color += contrib;
-
-			//if (someComponent(
-			//	(_pixels[row][col]._color - oldPixelVal),
-			//	[](double d){ return d < 0; }))
-			//{
-			//	std::cout << glm::to_string(contrib) << " whattt\n";
-			//}
-
 	}
 }
 
@@ -128,7 +115,6 @@ void Camera::sqrtAllPixels()
 				//_pixels[row][col]._color = Color{ 1,0,0 };
 			}
 
-			//_pixels[row][col]._color = glm::clamp(glm::sqrt(glm::max(_pixels[row][col]._color, 0.0)), 0.0, 0.1);
 			_pixels[row][col]._color = glm::sqrt(glm::max(_pixels[row][col]._color, 0.0));
 		}
 	}
@@ -183,7 +169,6 @@ void Camera::createPNG(const std::string& file)
 	}
 
 	std::cout << "Maximum intensity found: " << maxIntensity << '\n';
-
 	std::cout << "Start writing to file...\n";
 	
 	std::vector<unsigned char> image;
@@ -206,6 +191,5 @@ void Camera::createPNG(const std::string& file)
 
 	unsigned error = lodepng::encode(file, image, WIDTH, HEIGHT);
 	if (error) std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
-	else
-		std::cout << "Done!\n";
+	else std::cout << "Done!\n";
 }

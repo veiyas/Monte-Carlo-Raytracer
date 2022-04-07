@@ -1,11 +1,10 @@
 #include <iostream>
 #include <chrono>
-#include <ctime>   
+#include <ctime>
 #include <string>
 
 #include "scene.hpp"
 #include "camera.hpp"
-#include "ray.hpp"
 #include "config.hpp"
 #include "util.hpp"
 
@@ -13,10 +12,10 @@ int main()
 {
 	auto& config = Config::instance();
 	config.setResolution(200);
-	config.setSamplesPerPixel(1000);
+	config.setSamplesPerPixel(100);
 	config.setMonteCarloTerminationProbability(0.2f);
-	config.setNumShadowRaysPerIntersection(1000);
-	config.setUsePhotonMapping(true);
+	config.setNumShadowRaysPerIntersection(1);
+	config.setUsePhotonMapping(false);
 
 	Scene scene{};
 	Camera testCamera;

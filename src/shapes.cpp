@@ -135,7 +135,6 @@ std::optional<IntersectionData> Sphere::rayIntersection(Ray& arg) const
 
 void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFilled) const
 {
-	//static constexpr float EPSILON = 0.00001;
 	glm::vec3 rayStart{ arg.getStart().x, arg.getStart().y, arg.getStart().z };
 	glm::vec3 rayEnd{ arg.getEnd().x, arg.getEnd().y, arg.getEnd().z };
 	glm::vec3 rayDirectionNormalized = glm::normalize(rayEnd - rayStart);
@@ -164,9 +163,6 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 			intersectionPointNormal,
 			d
 		};
-		// probably shouldnt be handled like this, but im tired and it works hehe
-		//if (d > 0)
-		//	toBeFilled.push_back(IntersectionSurface{ temp, this });
 	}
 	else // Two intersections
 	{
@@ -205,16 +201,6 @@ void Sphere::rayIntersections(Ray& arg, std::vector<IntersectionSurface>& toBeFi
 		if (d2 > 0)
 			toBeFilled.push_back(IntersectionSurface{ temp2, this });
 	}
-
-	//glm::vec3 intersection = rayStart + rayDirectionNormalized.operator*=(d);
-	//glm::vec3 intersectionPointNormal = glm::normalize(glm::vec3{
-	//	intersection.x - _position.x,
-	//	intersection.y - _position.y,
-	//	intersection.z - _position.z });
-
-	//// Flip normal if intersecting from inside object
-	//if (isInside)
-	//	intersectionPointNormal *= -1.0f;
 }
 
 TriangleObj::TriangleObj(BRDF brdf, Vertex v1, Vertex v2, Vertex v3, Color color)
@@ -262,9 +248,8 @@ std::optional<IntersectionData> CeilingLight::rayIntersection(Ray& arg) const
 		return intersection1;
 	else if (!intersection1 && intersection2)
 		return intersection2;
-	else
+	else if (intersection1 && intersection2)
 		return intersection1->_t < intersection2->_t ? intersection1 : intersection2;
 
-	// TODO This code is unrechable!?
 	return {}; //No intersections
 }
